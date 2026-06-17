@@ -91,6 +91,7 @@
     <li><a href="#frontend">前端框架(Vue 全家桶)</a></li>
     <li><a href="#browser">浏览器对象模型</a></li>
     <li><a href="#npm">npm = JS 的 Buildroot</a></li>
+    <li><a href="#html">HTML 标签速查 + SPA 空壳</a></li>
   </ol>
 </nav>
 
@@ -323,6 +324,52 @@ Object.keys({id:1})    // 取所有键</code></pre>
     <tr><td>参数校验 / 测试 / 类型</td><td>zod / vitest / jest / typescript</td></tr>
   </table>
   <div class="analogy"><b>嵌入式类比:</b>npm ≈ Buildroot,package.json ≈ .config,npm install ≈ 编译进 rootfs。差异:npm 包极多极碎,要会挑(认周下载量百万级)。</div>
+</section>
+
+<section id="html">
+  <h2>14. HTML 标签速查 + SPA 空壳</h2>
+  <p class="q">dist/index.html 这个语法怎么看?</p>
+  <h3>语法三条规则</h3>
+  <pre><code>&lt;标签 属性="值"&gt;内容&lt;/标签&gt;
+   ↑开始标签              ↑结束标签(带斜杠)</code></pre>
+  <p>① 标签成对(<code>&lt;title&gt;...&lt;/title&gt;</code>),无内容的自闭合(<code>&lt;meta /&gt;</code>);② 属性写在开始标签里(<code>lang="zh"</code>);③ 标签嵌套成树 —— 这棵树就是 DOM。</p>
+  <div class="analogy"><b>C++ 类比:</b>HTML 不是编程语言(无逻辑/循环),只是纯描述性的嵌套结构,类似 XML/YAML 配置。浏览器读它 → 建成 DOM 对象树 → 画到屏幕。</div>
+
+  <h3>常用标签速查</h3>
+  <table>
+    <tr><th>标签</th><th>作用</th></tr>
+    <tr><td><code>&lt;!DOCTYPE html&gt;</code></td><td>声明 HTML5 文档,固定放第一行</td></tr>
+    <tr><td><code>&lt;html&gt;</code></td><td>根标签,整页都在里面</td></tr>
+    <tr><td><code>&lt;head&gt;</code></td><td>头部:元信息,不直接显示</td></tr>
+    <tr><td><code>&lt;meta charset&gt;</code></td><td>字符编码(UTF-8 防乱码)/ viewport 移动端自适应</td></tr>
+    <tr><td><code>&lt;title&gt;</code></td><td>浏览器标签页标题</td></tr>
+    <tr><td><code>&lt;script src&gt;</code></td><td>加载并执行 JS 文件</td></tr>
+    <tr><td><code>&lt;link rel="stylesheet"&gt;</code></td><td>加载 CSS 样式表</td></tr>
+    <tr><td><code>&lt;body&gt;</code></td><td>真正显示在页面上的内容</td></tr>
+    <tr><td><code>&lt;div&gt;</code></td><td>通用容器块(分区)</td></tr>
+    <tr><td><code>&lt;span&gt;</code></td><td>行内通用容器(包一小段文字)</td></tr>
+    <tr><td><code>&lt;h1&gt;~&lt;h6&gt;</code></td><td>标题(大→小)</td></tr>
+    <tr><td><code>&lt;p&gt;</code></td><td>段落</td></tr>
+    <tr><td><code>&lt;a href&gt;</code></td><td>超链接</td></tr>
+    <tr><td><code>&lt;img src&gt;</code></td><td>图片</td></tr>
+    <tr><td><code>&lt;ul&gt;/&lt;ol&gt;/&lt;li&gt;</code></td><td>无序/有序列表 + 列表项</td></tr>
+    <tr><td><code>&lt;form&gt;</code></td><td>表单容器</td></tr>
+    <tr><td><code>&lt;input&gt;</code></td><td>输入框(type=text/password/email...)</td></tr>
+    <tr><td><code>&lt;button&gt;</code></td><td>按钮</td></tr>
+    <tr><td><code>id / class</code> 属性</td><td>id 唯一标识;class 分类(CSS/JS 靠它们定位元素)</td></tr>
+  </table>
+
+  <h3>SPA 空壳:body 里几乎是空的</h3>
+  <pre><code>&lt;body&gt;
+  &lt;div id="app"&gt;&lt;/div&gt;   &lt;!-- 空容器,登录框/按钮 HTML 里一个都没有 --&gt;
+&lt;/body&gt;</code></pre>
+  <p>界面去哪了?由 <code>&lt;script&gt;</code> 加载的 Vue 应用在运行时动态生成,塞进 <code>#app</code>:</p>
+  <pre><code>浏览器加载 index.html → 看到空的 &lt;div id="app"&gt;
+  → 执行 &lt;script&gt; 里的 Vue 代码
+    → main.js: createApp(App).mount('#app')
+      → Vue 把整个界面"画"进这个空 div → 登录框/按钮才出现</code></pre>
+  <div class="tip"><b>dist 是编译产物:</b>源文件 body 里只有 <code>&lt;script src="/src/main.js"&gt;</code>;<code>npm run build</code> 后被打包成带哈希名的 <code>/assets/index-xxxx.js</code> + 自动注入 CSS <code>&lt;link&gt;</code>。哈希名用于缓存:内容变→文件名变→强制重新下载。</div>
+  <div class="key">HTML 用成对标签描述页面结构(非编程语言),浏览器读它建成 DOM 树;SPA 的 body 只是个空壳 <code>&lt;div id="app"&gt;</code>,真正界面由 JS(Vue)运行时生成塞进去。</div>
 </section>
 
 <footer>
