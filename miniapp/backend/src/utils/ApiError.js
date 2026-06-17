@@ -22,6 +22,10 @@ class ApiError extends Error {
     return new ApiError(404, msg, code);
   }
 
+  static forbidden(msg = '无权限', code = 40300) {
+    return new ApiError(403, msg, code);
+  }
+
   static internal(msg = '服务器内部错误', code = 50000) {
     return new ApiError(500, msg, code);
   }

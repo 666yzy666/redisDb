@@ -32,13 +32,14 @@ function genCode() {
 
 // 签发 JWT + 写 Redis 会话,返回 { token, user }(去掉密码哈希)
 async function issueSession(user) {
-  const token = jwt.sign({ userId: user.id, email: user.email }, config.jwt.secret, {
+  const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, config.jwt.secret, {
     expiresIn: config.jwt.expiresIn,
   });
   await getRedis().set(sessionKey(user.id), token, 'EX', SESSION_TTL);
   const safeUser = {
     id: user.id,
     email: user.email,
+    role: user.role,
     nickname: user.nickname,
     avatar_url: user.avatar_url,
     created_at: user.created_at,

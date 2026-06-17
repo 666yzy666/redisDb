@@ -28,7 +28,7 @@ module.exports = async function auth(req, res, next) {
       throw ApiError.unauthorized('会话已失效，请重新登录');
     }
 
-    req.user = { userId: payload.userId, openid: payload.openid };
+    req.user = { userId: payload.userId, email: payload.email, role: payload.role };
     next();
   } catch (err) {
     next(err);
