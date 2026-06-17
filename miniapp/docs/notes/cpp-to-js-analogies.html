@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>从 C++ 到 JS / Web 后端 — 类比学习笔记</title>
+<style>
+  :root {
+    --bg: #f6f8fa; --card: #fff; --ink: #1f2328; --muted: #57606a;
+    --accent: #0969da; --accent-bg: #ddf4ff; --cpp: #8250df; --cpp-bg: #f3eefb;
+    --code-bg: #f6f8fa; --border: #d0d7de; --ok: #1a7f37; --warn: #9a6700;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.7;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+  header h1 { font-size: 1.9rem; margin: 0 0 6px; }
+  header p { color: var(--muted); margin: 0 0 24px; }
+  nav.toc {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 28px;
+  }
+  nav.toc h2 { font-size: 1rem; margin: 0 0 10px; color: var(--muted); }
+  nav.toc ol { margin: 0; padding-left: 22px; columns: 2; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  section {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 22px 24px; margin-bottom: 20px;
+  }
+  section h2 {
+    font-size: 1.25rem; margin: 0 0 4px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent-bg);
+  }
+  .q { color: var(--muted); font-style: italic; margin: 6px 0 14px; }
+  .q::before { content: "❓ "; }
+  h3 { font-size: 1.02rem; margin: 18px 0 6px; }
+  p { margin: 8px 0; }
+  code {
+    background: var(--code-bg); padding: 1px 6px; border-radius: 5px;
+    font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.88em;
+  }
+  pre {
+    background: #0d1117; color: #e6edf3; padding: 14px 16px; border-radius: 8px;
+    overflow-x: auto; font-size: 0.85rem; line-height: 1.55;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.92rem; }
+  th, td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); }
+  .analogy {
+    background: var(--cpp-bg); border-left: 4px solid var(--cpp);
+    padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0;
+  }
+  .analogy b { color: var(--cpp); }
+  .tip {
+    background: var(--accent-bg); border-left: 4px solid var(--accent);
+    padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0;
+  }
+  .key {
+    background: #fff8c5; border-left: 4px solid var(--warn);
+    padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 14px 0;
+  }
+  .key::before { content: "🔑 一句话: "; font-weight: 700; }
+  .ok { color: var(--ok); } .no { color: #cf222e; }
+  footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>从 C++ 到 JS / Web 后端 — 类比学习笔记</h1>
+  <p>面向 C/C++ 背景的开发者,用熟悉的概念理解 JS、数据库、Redis、Docker、浏览器与前端框架。基于 miniapp 项目的实际代码。</p>
+</header>
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#arch">后端分层架构</a></li>
+    <li><a href="#node">JS / Node 与 C++</a></li>
+    <li><a href="#async">async / await</a></li>
+    <li><a href="#thread">单线程 / 多进程 / 多核</a></li>
+    <li><a href="#concurrency">抗并发(并发 vs 并行)</a></li>
+    <li><a href="#db">数据库与"加字段"</a></li>
+    <li><a href="#redis">Redis 的两类用途</a></li>
+    <li><a href="#docker">Docker:卷 / 数据文件</a></li>
+    <li><a href="#socket">socket 通信与协议</a></li>
+    <li><a href="#syntax">JS 基础语法对照</a></li>
+    <li><a href="#frontend">前端框架(Vue 全家桶)</a></li>
+    <li><a href="#browser">浏览器对象模型</a></li>
+    <li><a href="#npm">npm = JS 的 Buildroot</a></li>
+  </ol>
+</nav>
+
+<section id="arch">
+  <h2>1. 后端分层架构</h2>
+  <p class="q">后端代码怎么组织的?</p>
+  <p>一个请求像流水线一样从上往下穿过各层,每层只干一件事:</p>
+  <pre><code>HTTP 请求
+  → routes/        路由表:URL → 哪个函数      (像 switch-case 分发)
+  → middlewares/   中间件:鉴权、错误捕获       (请求的前置拦截器)
+  → controllers/   控制器:收参数、调 service、返回响应(不写业务逻辑)
+  → services/      业务逻辑:状态机、事务、缓存编排(核心)
+  → repositories/  数据访问层(DAO):只写 SQL
+  → loaders/       基础设施:MySQL 连接池、Redis 客户端
+  → MySQL / Redis</code></pre>
+  <div class="analogy"><b>C++ 类比:</b>就是"接口层 / 逻辑层 / 数据层"分离。换数据库只改 repository,改业务只改 service,互不影响。</div>
+  <div class="key">请求穿过 路由→中间件→控制器→服务→仓库→数据库,每层职责单一。</div>
+</section>
+
+<section id="node">
+  <h2>2. JS / Node 与 C++</h2>
+  <p class="q">JS 是后端语言吗?Node 是什么?</p>
+  <table>
+    <tr><th>名词</th><th>是什么</th><th>C++ 类比</th></tr>
+    <tr><td>JavaScript</td><td>语言本身</td><td>C++ 语法规则</td></tr>
+    <tr><td>Node.js</td><td>能在服务器跑 JS 的运行时(底层 C++ 写的 V8 引擎 + 文件/网络/DB 能力)</td><td>运行环境(编译目标)</td></tr>
+    <tr><td>Express</td><td>Web 框架(一个库)</td><td>第三方库</td></tr>
+  </table>
+  <p>JS 出身是<b>前端</b>语言(浏览器里让网页动),2009 年 Node.js 让它<b>也能写后端</b>。所以它是"前后端通用",不是单纯的后端语言。同一份 JS,换运行环境(浏览器 / Node)就能干不同的活。</p>
+  <div class="analogy"><b>C++ 类比:</b>JS 是语言;浏览器和 Node 是两个不同"运行环境",像同一份 C++ 代码分别编译成 Windows 程序和 Linux 程序。<code>require('mysql2')</code> 这类连数据库的能力来自 Node 环境,不是语言自带。</div>
+</section>
+
+<section id="async">
+  <h2>3. async / await</h2>
+  <p class="q">await 和 C++ 函数调用有什么不一样?前后 await 会顺序执行,那怎么和别的请求异步?</p>
+  <h3>根本区别:阻塞+多线程 vs 单线程+事件循环</h3>
+  <table>
+    <tr><th></th><th>顺序执行?</th><th>等待时线程在干嘛</th></tr>
+    <tr><td>C++ 阻塞调用</td><td>是</td><td><span class="no">死占着线程空转</span>,别人用不了</td></tr>
+    <tr><td>JS await</td><td>是(一样顺序)</td><td><span class="ok">线程离开去服务别的请求</span>,结果回来再继续</td></tr>
+  </table>
+  <p><code>await</code> 不阻塞线程,它只"暂停当前这个函数",把唯一的线程让给别人。等的是一个 <b>Promise</b>(未来值的"提货单",类比 <code>std::future</code>)。</p>
+  <pre><code>const x = await query();   // 线程:把请求发出去(几微秒)
+                           // ↓ 等数据库的几十毫秒,线程已离开去干别的
+console.log(x);            // 结果回来,线程回来从这继续</code></pre>
+  <h3>"顺序"与"异步"为何不矛盾</h3>
+  <p>"顺序"约束的是<b>你函数内部的代码行</b>;异步发生在<b>每个 await 等待 IO 的空档</b>——那段时间线程跑去执行了别的请求。</p>
+  <div class="analogy"><b>生活类比:</b>C++ 式 = 炖汤时盯着锅站 20 分钟啥也不干;await 式 = 汤下锅后立刻去切别的菜(处理别的请求),汤好了再回来盛。步骤顺序没变,但没干等。</div>
+  <div class="key">await 暂停当前函数、让出线程;该等的地方忘写 await,会拿到"提货单"(Promise)而非真实数据 —— 头号坑。</div>
+</section>
+
+<section id="thread">
+  <h2>4. 单线程 / 多进程 / 多核</h2>
+  <p class="q">Node 单线程,在多核机器上和单核不是一样?在哪创建多进程?多服务器怎么保证数据库一致?</p>
+  <p>一个 Node 进程基本只用一个核。要吃满多核 → <b>按核数多开几个 Node 进程</b>(cluster / PM2 / 多容器),OS 把它们铺到各核。</p>
+  <pre><code># PM2:零代码改动,按核数起满,自动共享端口
+pm2 start src/server.js -i max --name miniapp</code></pre>
+  <h3>扩展链:单线程 → 多进程 → 多机器,靠同一个原则</h3>
+  <pre><code>访问变多:  多 App ── 1 MySQL ── 1 Redis   (加 App + 负载均衡,一致性"免费")
+读压力大:  多 App ── 主库+从库 ── Redis    (读写分离,接受复制延迟)
+写也扛不住: 多 App ── 分库分表/TiDB ── Redis (最后才上,跨库事务最棘手)</code></pre>
+  <div class="analogy"><b>关键:</b>进程之间<b>不共享内存</b>(不同于 C++ 多线程)。能水平扩展的前提是"应用无状态"——会话放 Redis、数据放 MySQL,多个进程读同一份共享数据,所以天然一致。把状态从应用里挤出去,是后面一切扩展能力的地基。</div>
+</section>
+
+<section id="concurrency">
+  <h2>5. 抗并发(并发 vs 并行)</h2>
+  <p class="q">Node 单线程,抗并发不是很差吗?</p>
+  <p>恰恰相反——对 Web 服务(99% 时间在等 IO),单线程事件循环是<b>抗高并发的最优模型之一</b>。要分清两个词:</p>
+  <table>
+    <tr><th>词</th><th>含义</th><th>Node</th></tr>
+    <tr><td>高并发连接</td><td>同时扛几万个连接(各自大多在等)</td><td class="ok">极强 ✅</td></tr>
+    <tr><td>CPU 算力</td><td>用多核做大量计算</td><td class="no">弱 ❌(单核)</td></tr>
+  </table>
+  <p>C++ thread-per-connection:1 万连接 ≈ 1 万线程,吃内存、上下文切换累死(C10K 问题)。Node:连接在等待时不占线程,一个线程照看海量连接。Nginx 也是这个模型。</p>
+  <div class="key">Node 抗"高并发 IO 连接"极强,弱在"CPU 密集计算"——一段长时间不 await 的重活会卡死整条线。</div>
+</section>
+
+<section id="db">
+  <h2>6. 数据库与"加字段"</h2>
+  <p class="q">迭代版本要给数据库加记录信息怎么办?怎么更新数据库?迭代期间会不会不可用?</p>
+  <h3>数据库是一个"一直在跑的程序"</h3>
+  <p>MySQL 是常驻进程,你<b>给它发一句 SQL 文本</b>,它立刻执行、立刻改硬盘数据。没有编译、不用重启。</p>
+  <pre><code># 三种发命令方式,本质一样:
+mysql -u root -p           # ① 交互窗口手敲
+mysql -u root -p db < x.sql # ② 把 SQL 文件喂进去
+# ③ 图形工具(DBeaver/Navicat)点执行</code></pre>
+  <h3>加字段 = 迁移(migration)</h3>
+  <p>不要改 <code>init.sql</code>(那是"从零建库"用的,且只在数据卷为空时跑一次)。写一个迁移文件:</p>
+  <pre><code>ALTER TABLE users ADD COLUMN phone VARCHAR(20) NOT NULL DEFAULT '';</code></pre>
+  <p>然后顺着分层往上改:repository 的 SELECT/UPDATE 带上新列 → service 业务规则(注意清/等 Redis 旧缓存)→ controller 收新参数。</p>
+  <h3>迭代期间会不会停服?</h3>
+  <table>
+    <tr><th>改动</th><th>影响可用性</th><th>做法</th></tr>
+    <tr><td>加列(可空/有默认值)</td><td class="ok">不影响</td><td>先迁移、后发代码,一步搞定</td></tr>
+    <tr><td>删列/改名/改类型</td><td class="no">直接做会挂</td><td>扩展-收缩三步走,绝不一步到位</td></tr>
+    <tr><td>换代码进程</td><td>单进程会断几秒</td><td>多实例滚动部署 + 优雅关闭</td></tr>
+  </table>
+  <div class="analogy"><b>C++ 类比:</b>C++ 改 struct 加成员重新编译即可;但数据库是<b>持久</b>的,线上已有真实数据,必须用 ALTER 在不丢数据的前提下"追加一列"。<code>ON UPDATE CURRENT_TIMESTAMP</code> 那种由数据库自己维护,不用代码管。</div>
+  <div class="key">加列向后兼容("先 DB 后代码"+ 默认值)即可不停机;删/改是破坏性变更,必须拆成几个版本慢慢来。</div>
+</section>
+
+<section id="redis">
+  <h2>7. Redis 的两类用途</h2>
+  <p class="q">Redis 在项目里干嘛?</p>
+  <p>内存数据库,超快但断电丢(只放"丢了能重建"的)。看 key 前缀区分两类用途:</p>
+  <table>
+    <tr><th>用途</th><th>key</th><th>失效</th></tr>
+    <tr><td>会话(登录态)</td><td><code>session:{userId}</code></td><td>7 天 TTL / 登出删</td></tr>
+    <tr><td>缓存(Cache-Aside)</td><td><code>user:profile:{id}</code> / <code>order:detail:{id}</code></td><td>TTL(带抖动)/ 更新刷新</td></tr>
+    <tr><td>验证码(本项目邮箱认证)</td><td><code>verify:register:{email}</code></td><td>5 分钟 TTL</td></tr>
+  </table>
+  <p>缓存三大坑的对策:<b>防穿透</b>(把"不存在"也缓存短 TTL)、<b>防雪崩</b>(TTL 加 ±10% 抖动)、<b>写后刷新</b>(更新库后直接写回最新值)。</p>
+</section>
+
+<section id="docker">
+  <h2>8. Docker:卷 / 数据文件</h2>
+  <p class="q">init.sql 不是脚本怎么跑起来的?数据库文件在哪?敏感数据都放卷里吗?</p>
+  <h3>init.sql 怎么"自动跑"</h3>
+  <p>compose 里 <code>./sql/init.sql:/docker-entrypoint-initdb.d/init.sql</code> 只是把文件<b>映射</b>进容器某目录。MySQL 镜像的启动脚本约定:首次启动(数据目录为空)时,会把该目录下的 <code>.sql</code> 文件喂给数据库执行。等价于你手动 <code>mysql < init.sql</code>,只是镜像替你做了。<b>非空就跳过</b> —— 这就是"改了 init.sql 重启不生效"的原因。</p>
+  <h3>数据文件在哪</h3>
+  <pre><code>compose: mysql_data:/var/lib/mysql   ← named volume
+主机真实路径: /var/lib/docker/volumes/&lt;项目名&gt;_mysql_data/_data
+每张表一个文件: users.ibd / orders.ibd ...(InnoDB)</code></pre>
+  <table>
+    <tr><th>概念</th><th>是什么</th><th>持久?</th></tr>
+    <tr><td>容器</td><td>正在跑的 MySQL 进程</td><td>临时,删了重建无所谓</td></tr>
+    <tr><td>卷(volume)</td><td>硬盘上的数据文件</td><td><b>持久</b>,真正的家当</td></tr>
+  </table>
+  <div class="analogy"><b>C++ 类比:</b>.ibd 文件就像你 C++ 程序写的二进制数据文件,只是格式由 InnoDB 定、由 MySQL 进程独占(不能用文本编辑器直接改)。</div>
+  <div class="key">"持久数据进卷;秘密(密码/密钥)走环境变量/密钥管理而非卷;代码进镜像"。生产里数据库常独立部署,容器主要装无状态应用。</div>
+</section>
+
+<section id="socket">
+  <h2>9. socket 通信与协议</h2>
+  <p class="q">JS 和数据库是 socket 连的吗?会转换成什么数据流?MySQL 监听 HTTP 吗?都走 socket 不会有效率问题?</p>
+  <p>是的——Node 和 MySQL/Redis 是<b>独立进程,靠 TCP socket 通信</b>,跟 C++ 连远程服务收发字节一样。</p>
+  <div class="analogy"><b>C++ 类比:</b><code>getPool().query(sql, params)</code> ≈ 封装好的 <code>send(编码后的SQL) + recv(结果) + parse</code>。"连接池"就是一组预先建好、循环复用的 socket。</div>
+  <h3>TCP 是通道,协议是语言</h3>
+  <table>
+    <tr><th>端口</th><th>谁</th><th>说什么语言</th></tr>
+    <tr><td>3000</td><td>Node(Express)</td><td><b>HTTP</b>(唯一说 HTTP 的地方)</td></tr>
+    <tr><td>3306</td><td>MySQL</td><td>MySQL 二进制协议(<b>不是 HTTP</b>)</td></tr>
+    <tr><td>6379</td><td>Redis</td><td>RESP 协议</td></tr>
+  </table>
+  <h3>发给数据库的真实数据流</h3>
+  <p>代码里 <code>WHERE id IN (?,?)</code> + <code>[1,2]</code>,mysql2 在发送前拼成最终文本,MySQL 实际收到:<code>... WHERE id IN (1,2)</code>。打成 length-prefixed 的字节包:</p>
+  <pre><code>[包体长度 3B][序号 1B][命令 1B=0x03 COM_QUERY][SQL 文本字节...]</code></pre>
+  <div class="analogy"><b>C++ 类比:</b>就是"先发长度,再发类型,再发内容"的 length-prefixed 自定义协议,只不过格式由 MySQL 定。</div>
+  <h3>效率:成本真实但可控</h3>
+  <p>一次本机往返毫秒级(比进程内调用慢几万倍,但绝对值不大)。杀手是"往返次数太多"。对策全在项目里:<b>连接池</b>省建连、<b>findByIds 批量</b>把 N 次压成 1 次、<b>Redis 缓存</b>把"贵的 MySQL 往返"换成"便宜的内存往返"。</p>
+  <pre><code>进程内存(纳秒) > Redis内存(微秒,隔socket) > MySQL磁盘(毫秒,隔socket+读盘)</code></pre>
+</section>
+
+<section id="syntax">
+  <h2>10. JS 基础语法对照</h2>
+  <table>
+    <tr><th>语法</th><th>JS</th><th>C++ 对照 / 说明</th></tr>
+    <tr><td>变量</td><td><code>const x=1; let y=2;</code></td><td>不写类型(动态类型);默认用 const</td></tr>
+    <tr><td>类型</td><td>number / string / boolean / null / undefined</td><td>不分 int/float;<b>两种"空"</b>:undefined(没赋值)、null(故意置空)</td></tr>
+    <tr><td>模板字符串</td><td><code>`你好 ${name}`</code></td><td>反引号内插值,比拼字符串爽</td></tr>
+    <tr><td>箭头函数</td><td><code>(a,b) => a+b</code></td><td>"输入 => 输出"</td></tr>
+    <tr><td>对象/数组</td><td><code>{id:1}</code> / <code>[1,2]</code></td><td>struct+map / 类似 vector(不限类型)</td></tr>
+    <tr><td>解构</td><td><code>const {email} = req.body</code></td><td>一次拆出字段</td></tr>
+    <tr><td>相等</td><td><code>===</code> / <code>!==</code></td><td><b>永远用 ===</b>;== 会偷偷转类型(坑)</td></tr>
+    <tr><td>可选链 / 合并</td><td><code>user?.email</code> / <code>a ?? b</code></td><td>防 undefined 报错 / 左空才用右</td></tr>
+    <tr><td>展开</td><td><code>{...user, active:false}</code></td><td>复制+覆盖</td></tr>
+    <tr><td>模块</td><td>后端 <code>require/module.exports</code>;前端 <code>import/export</code></td><td>类比 #include + 显式导出</td></tr>
+  </table>
+  <div class="key">C++ 老手五大坑:== vs ===、null vs undefined、动态类型、分号建议都加、this 指向多变(初学多用箭头函数)。</div>
+</section>
+
+<section id="frontend">
+  <h2>11. 前端框架(Vue 全家桶)</h2>
+  <p class="q">前端框架怎么组织?Pinia store 那段什么意思?</p>
+  <p>前端是<b>跑在浏览器里的 SPA(单页应用)</b>:只有一个 index.html,页面切换由 JS 换内容,不向服务器要新网页。</p>
+  <table>
+    <tr><th>库</th><th>角色</th><th>类比</th></tr>
+    <tr><td>Vue3</td><td>界面框架:数据变 UI 自动变</td><td>GUI 框架(Qt)</td></tr>
+    <tr><td>Vite</td><td>构建/开发服务器 + 代理</td><td>编译器 + 构建系统</td></tr>
+    <tr><td>Vue Router</td><td>URL ↔ 显示哪个页面</td><td>浏览器端的 routes/</td></tr>
+    <tr><td>Pinia</td><td>跨页面共享状态(登录态)</td><td>全局单例 / 共享状态</td></tr>
+    <tr><td>axios</td><td>发 HTTP 请求</td><td>"之于后端 API"的连接库</td></tr>
+  </table>
+  <h3>响应式:Vue 的精髓</h3>
+  <p><code>ref</code> 变量改了,界面自动重画;用户输入,变量自动更新。<b>你不用手动操作 DOM</b>。</p>
+  <h3>Pinia store = 带响应式 + 持久化的全局单例</h3>
+  <pre><code>defineStore('auth', {
+  state:   () => ({ token, user }),      // 数据(从 localStorage 恢复,刷新不丢)
+  getters: { isLoggedIn: s => !!s.token },// 派生只读值(类比 const 成员函数)
+  actions: { login(){...}, logout(){...} }// 改数据的方法,改 this.xxx → 界面自动更新
+})</code></pre>
+  <p>语法点:<code>() => ({...})</code> 箭头返回对象要加圆括号;<code>|| ''</code> 兜底;<code>!!</code> 转布尔;<code>JSON.parse/stringify</code> 在对象↔字符串间转(localStorage 只能存字符串)。</p>
+  <div class="key">Vue3 管"数据变界面变";Router 管页面切换;Pinia 是共享状态(类比会话);axios+api 层跟后端对话;Vite 是构建工具兼开发服务器,用代理把 /api 转给后端解决跨域。</div>
+</section>
+
+<section id="browser">
+  <h2>12. 浏览器对象模型</h2>
+  <p class="q">浏览器里有哪些对象?我要操作和获取什么?(像 C++ 我知道 std::string 有哪些方法)</p>
+  <p>JS 里有<b>两类对象</b>,分清就不模糊了。</p>
+  <h3>第一类:纯数据对象 — 和 C++ 容器一样</h3>
+  <p>字符串/数组/对象,活在 JS 内存堆,调方法做纯计算。</p>
+  <pre><code>"a@b.com".split("@")   // 类比 std::string 方法
+[3,1,2].map(x=>x*2)    // 类比 std::vector
+Object.keys({id:1})    // 取所有键</code></pre>
+  <h3>第二类:浏览器"句柄对象" — 像 C 的 OS 句柄</h3>
+  <p>浏览器预先塞给你的全局对象,是通往真实世界(屏幕/存储/网络)的句柄。调它的方法,真实世界就变。</p>
+  <table>
+    <tr><th>对象</th><th>代表</th><th>操作/获取什么</th></tr>
+    <tr><td><code>window</code></td><td>全局根(整个标签页)</td><td>一切都挂它下面</td></tr>
+    <tr><td><code>document</code></td><td>页面 DOM(一棵对象树)</td><td><code>getElementById</code> 找元素;改元素 → 屏幕变;读元素 → 拿界面状态</td></tr>
+    <tr><td>DOM 元素</td><td>每个 HTML 标签</td><td><code>.value</code> 读输入、<code>.textContent</code> 改文字、<code>.addEventListener</code> 监听点击</td></tr>
+    <tr><td><code>localStorage</code></td><td>持久键值存储</td><td><code>setItem/getItem/removeItem</code></td></tr>
+    <tr><td><code>fetch</code></td><td>网络(通往后端)</td><td>发 HTTP(axios 封装了它)</td></tr>
+    <tr><td><code>console</code></td><td>控制台</td><td><code>log</code>(类比 printf)</td></tr>
+  </table>
+  <div class="analogy"><b>C/C++ 类比:</b>第一类 = <code>std::string</code>/<code>std::vector</code>(自己算);第二类 = OS 句柄 <code>FILE*</code>/socket/GUI 控件(操作它就影响真实世界)。DOM 就是浏览器版的 GUI 控件树:改 DOM 对象 → 浏览器自动重画屏幕。</div>
+  <div class="tip"><b>Vue 把第二类藏起来了:</b>项目里几乎不直接写 <code>document.getElementById</code>。你只改数据,Vue 在底层自动调 DOM API 更新屏幕(响应式)。底层有 DOM 这套句柄,但平时用 Vue 不直接碰。</div>
+</section>
+
+<section id="npm">
+  <h2>13. npm = JS 的 Buildroot</h2>
+  <p class="q">JS 常用库去哪找?(嵌入式我们去 Buildroot)</p>
+  <p><b>npm</b>(npmjs.com)就是 JS 的包仓库;<code>package.json</code> 是包清单;<code>npm install xxx</code> 装到 node_modules/。生态极大,认下载量/活跃度挑。</p>
+  <table>
+    <tr><th>用途</th><th>常用库(★=本项目已用)</th></tr>
+    <tr><td>后端框架</td><td>express ★ / fastify / nestjs</td></tr>
+    <tr><td>DB / Redis / 鉴权</td><td>mysql2 ★ / ioredis ★ / jsonwebtoken ★ / bcryptjs ★ / nodemailer ★ / dotenv ★</td></tr>
+    <tr><td>前端核心</td><td>vue ★ / vite ★ / vue-router ★ / pinia ★ / axios ★ / tailwindcss ★</td></tr>
+    <tr><td>现成 UI 组件库</td><td>Element Plus / Ant Design / Naive UI</td></tr>
+    <tr><td>参数校验 / 测试 / 类型</td><td>zod / vitest / jest / typescript</td></tr>
+  </table>
+  <div class="analogy"><b>嵌入式类比:</b>npm ≈ Buildroot,package.json ≈ .config,npm install ≈ 编译进 rootfs。差异:npm 包极多极碎,要会挑(认周下载量百万级)。</div>
+</section>
+
+<footer>
+  miniapp 学习笔记 · 基于实际项目代码整理 · 用浏览器打开本文件即可阅读
+</footer>
+</div>
+</body>
+</html>
