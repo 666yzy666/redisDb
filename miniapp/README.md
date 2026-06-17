@@ -74,6 +74,13 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 | GET  | `/api/admin/users?page=&pageSize=&email=` | 用户列表(分页 + 邮箱模糊搜索),仅管理员 |
 | PATCH | `/api/admin/users/:id/role`   | 改角色 user↔admin(不能改自己),仅管理员 |
 | PATCH | `/api/admin/users/:id/status` | 启用/禁用(active/disabled,不能禁用自己),仅管理员 |
+| POST | `/api/payment/orders` | 下单(`{amount,subject}`),需登录 |
+| GET  | `/api/payment/orders` | 我的订单列表,需登录 |
+| POST | `/api/payment/orders/:id/pay` | 发起支付 → 返回 payUrl,需登录 |
+| POST | `/api/payment/orders/:id/cancel` | 取消(仅 pending、仅本人),需登录 |
+| POST | `/api/payment/notify/:channel` | 支付网关回调 → 订单转 paid(幂等),无鉴权 |
+| POST | `/api/payment/mock/complete` | 本地模拟网关完成支付(`{orderNo}`),需登录 |
+| GET  | `/api/admin/orders?page=&pageSize=&status=` | 所有订单分页(status 可选),仅管理员 |
 
 - 密码用 `bcrypt` 加盐哈希入库,绝不存明文。
 - 登录态复用现有 JWT + Redis 会话(`session:{userId}`)。
@@ -92,6 +99,14 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 - 禁用 = 阻止登录(登录返回「账号已被禁用」)+ 删除该用户 Redis 会话(已登录的会被踢下线)。
 - 管理员不能禁用 / 降级自己(后端返回 400,前端灰掉本人行)。
 
+## 支付订单(SP3)
+
+- 新增 `payment_orders` 表(框架通用付款订单,与电商 `orders` 表并存,互不干扰)。
+- 支付渠道可插拔:`backend/src/services/payment/channels/`,目前是 mock 渠道;接真实渠道(支付宝 / Stripe)只需实现同样的 `createCharge` / `parseNotify` 并在 `services/payment/index.js` 注册。
+- 支付流程:下单(pending)→ 发起支付(`createCharge`)→ 网关回调 `/payment/notify/:channel`(或本地 `/payment/mock/complete`)→ markPaid。
+- markPaid 用守卫式 `UPDATE ... WHERE status='pending'`,保证回调幂等(多次回调只第一次生效)。
+- 订单状态:`pending` / `paid` / `cancelled`。
+
 ## 前端结构
 
 - 新增 `frontend/src/layouts/`:`DefaultLayout`(前台顶栏)/ `AdminLayout`(后台侧边栏)。
@@ -100,6 +115,8 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 - 新增后台「用户管理」页 `frontend/src/views/admin/UsersView.vue`(表格 + 邮箱搜索 + 分页 + 改角色 / 启用禁用),AdminLayout 侧边栏新增「用户管理」入口。
 - 新增 `frontend/src/api/admin.js`(`listUsers` / `setUserRole` / `setUserStatus`)。
 - 路由按角色守卫:未登录访问需鉴权页跳 `/login`;非管理员访问 `/admin/*` 跳 `/home`。
+- 新增用户端 `views/user/OrdersView.vue`(下单 + 我的订单 + 去支付 / 取消)、后台 `views/admin/OrdersView.vue`(所有订单 + 状态筛选 + 分页)、`api/payment.js`。
+- 顶栏新增「我的订单」,后台侧边栏新增「订单管理」。
 
 ## 说明
 
