@@ -35,7 +35,7 @@ const UserRepository = {
   // 邮箱认证用：显式选取 email/password_hash(findById 没选这两列)
   async findByEmail(email) {
     const [rows] = await getPool().execute(
-      'SELECT id, email, password_hash, role, nickname, avatar_url, created_at FROM users WHERE email = :email LIMIT 1',
+      'SELECT id, email, password_hash, role, status, nickname, avatar_url, created_at FROM users WHERE email = :email LIMIT 1',
       { email }
     );
     return rows[0] || null;

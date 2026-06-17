@@ -108,6 +108,10 @@ const AuthService = {
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) throw ApiError.unauthorized('邮箱或密码错误');
 
+    if (user.status === 'disabled') {
+      throw ApiError.forbidden('账号已被禁用');
+    }
+
     return issueSession(user);
   },
 
