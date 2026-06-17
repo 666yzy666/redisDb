@@ -20,6 +20,7 @@ const routes = [
       { path: 'home', component: () => import('../views/HomeView.vue') },
       { path: 'profile', component: () => import('../views/user/ProfileView.vue') },
       { path: 'orders', component: () => import('../views/user/OrdersView.vue') },
+      { path: 'announcements', component: () => import('../views/user/AnnouncementsView.vue') },
     ],
   },
 
@@ -32,6 +33,8 @@ const routes = [
       { path: 'dashboard', component: () => import('../views/admin/DashboardView.vue') },
       { path: 'users', component: () => import('../views/admin/UsersView.vue') },
       { path: 'orders', component: () => import('../views/admin/OrdersView.vue') },
+      { path: 'announcements', component: () => import('../views/admin/AnnouncementsView.vue') },
+      { path: 'settings', component: () => import('../views/admin/SettingsView.vue') },
     ],
   },
 ];

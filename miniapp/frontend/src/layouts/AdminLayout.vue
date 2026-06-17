@@ -1,9 +1,13 @@
 <script setup>
+import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useAppStore } from '../stores/app';
 
 const router = useRouter();
 const auth = useAuthStore();
+const app = useAppStore();
+onMounted(() => app.loadPublic());
 
 function logout() {
   auth.logout();
@@ -14,11 +18,13 @@ function logout() {
 <template>
   <div class="min-h-screen flex bg-gray-100">
     <aside class="w-48 bg-gray-800 text-gray-100 flex flex-col">
-      <div class="h-14 flex items-center px-4 font-bold border-b border-gray-700">管理后台</div>
+      <div class="h-14 flex items-center px-4 font-bold border-b border-gray-700">{{ app.siteName }} 后台</div>
       <nav class="flex-1 p-2 space-y-1 text-sm">
         <router-link to="/admin/dashboard" class="block px-3 py-2 rounded hover:bg-gray-700">仪表盘</router-link>
         <router-link to="/admin/users" class="block px-3 py-2 rounded hover:bg-gray-700">用户管理</router-link>
         <router-link to="/admin/orders" class="block px-3 py-2 rounded hover:bg-gray-700">订单管理</router-link>
+        <router-link to="/admin/announcements" class="block px-3 py-2 rounded hover:bg-gray-700">公告</router-link>
+        <router-link to="/admin/settings" class="block px-3 py-2 rounded hover:bg-gray-700">系统设置</router-link>
         <!-- SP2 起在此加：用户管理 / 订单 等 -->
       </nav>
       <router-link to="/home" class="px-4 py-3 text-xs text-gray-400 hover:text-white border-t border-gray-700">← 返回前台</router-link>
