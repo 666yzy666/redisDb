@@ -55,6 +55,35 @@ const UserRepository = {
       { id, passwordHash }
     );
   },
+
+  // 用户列表(邮箱模糊搜索 + 分页)。email 为空则不过滤。
+  async listUsers({ email, limit, offset }) {
+    const where = email ? 'WHERE email LIKE ?' : '';
+    const params = email ? [`%${email}%`, limit, offset] : [limit, offset];
+    const [rows] = await getPool().query(
+      `SELECT id, email, role, status, nickname, created_at FROM users ${where} ORDER BY id DESC LIMIT ? OFFSET ?`,
+      params
+    );
+    return rows;
+  },
+
+  async countUsers({ email }) {
+    const where = email ? 'WHERE email LIKE ?' : '';
+    const params = email ? [`%${email}%`] : [];
+    const [rows] = await getPool().query(
+      `SELECT COUNT(*) AS total FROM users ${where}`,
+      params
+    );
+    return rows[0].total;
+  },
+
+  async updateRole(id, role) {
+    await getPool().execute('UPDATE users SET role = :role WHERE id = :id', { id, role });
+  },
+
+  async updateStatus(id, status) {
+    await getPool().execute('UPDATE users SET status = :status WHERE id = :id', { id, status });
+  },
 };
 
 module.exports = UserRepository;
