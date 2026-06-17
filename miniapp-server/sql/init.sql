@@ -1,0 +1,64 @@
+-- 初始化数据库与表
+-- 用法: mysql -u root -p < sql/init.sql
+
+CREATE DATABASE IF NOT EXISTS `miniapp`
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE `miniapp`;
+
+CREATE TABLE IF NOT EXISTS `users` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `openid`     VARCHAR(64)  NOT NULL COMMENT '微信 openid',
+  `nickname`   VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '昵称',
+  `avatar_url` VARCHAR(512) NOT NULL DEFAULT '' COMMENT '头像 URL',
+  `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_openid` (`openid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序用户表';
+
+-- ===== 电商订单模块 =====
+
+-- 商品表
+CREATE TABLE IF NOT EXISTS `products` (
+  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`       VARCHAR(128)    NOT NULL COMMENT '商品名',
+  `price`      DECIMAL(10,2)   NOT NULL COMMENT '单价（元）',
+  `stock`      INT UNSIGNED    NOT NULL DEFAULT 0 COMMENT '库存',
+  `created_at` TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品表';
+
+-- 订单表：status 是状态机的核心字段
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id`      BIGINT UNSIGNED NOT NULL COMMENT '下单用户',
+  `status`       VARCHAR(16)     NOT NULL DEFAULT 'pending'
+                 COMMENT '状态: pending/paid/shipped/completed/cancelled',
+  `total_amount` DECIMAL(10,2)   NOT NULL DEFAULT 0 COMMENT '订单总额（下单时快照）',
+  `created_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单表';
+
+-- 订单明细表：下单时快照商品名与价格，商品后续改价不影响历史订单
+CREATE TABLE IF NOT EXISTS `order_items` (
+  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `order_id`     BIGINT UNSIGNED NOT NULL,
+  `product_id`   BIGINT UNSIGNED NOT NULL,
+  `product_name` VARCHAR(128)    NOT NULL COMMENT '下单时的商品名快照',
+  `price`        DECIMAL(10,2)   NOT NULL COMMENT '下单时的单价快照',
+  `quantity`     INT UNSIGNED    NOT NULL COMMENT '购买数量',
+  PRIMARY KEY (`id`),
+  KEY `idx_order` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单明细表';
+
+-- 种几条商品，方便直接下单
+INSERT INTO `products` (`name`, `price`, `stock`) VALUES
+  ('机械键盘', 299.00, 100),
+  ('无线鼠标', 99.00, 200),
+  ('USB-C 数据线', 29.90, 500)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
