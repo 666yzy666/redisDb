@@ -8,6 +8,7 @@ const ApiError = require('../utils/ApiError');
 const logger = require('../utils/logger');
 const UserRepository = require('../repositories/user.repository');
 const emailService = require('./email.service');
+const settingService = require('./setting.service');
 const { getRedis } = require('../loaders/redis');
 
 const SESSION_TTL = 7 * 24 * 3600;
@@ -75,6 +76,9 @@ const AuthService = {
 
   // 注册:校验验证码 → 哈希密码 → 入库 → 注册即登录
   async register(email, password, code) {
+    if (!(await settingService.isRegistrationOpen())) {
+      throw ApiError.forbidden('注册已关闭');
+    }
     assertEmail(email);
     assertPassword(password);
     if (!code) throw ApiError.badRequest('请输入验证码');

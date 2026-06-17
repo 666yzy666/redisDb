@@ -4,6 +4,7 @@ const ApiError = require('../utils/ApiError');
 const UserRepository = require('../repositories/user.repository');
 const { getRedis } = require('../loaders/redis');
 const PaymentOrderService = require('./paymentOrder.service');
+const SettingService = require('./setting.service');
 
 const MAX_PAGE_SIZE = 100;
 const sessionKey = (userId) => `session:${userId}`;
@@ -70,6 +71,14 @@ const AdminService = {
 
   async listOrders({ page, pageSize, status }) {
     return PaymentOrderService.listAllForAdmin({ page, pageSize, status });
+  },
+
+  async getSettings() {
+    return SettingService.getAllForAdmin();
+  },
+
+  async updateSettings(body) {
+    return SettingService.updateMany(body || {});
   },
 };
 

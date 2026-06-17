@@ -27,6 +27,16 @@ const AdminController = {
     const result = await AdminService.listOrders({ page, pageSize, status });
     return success(res, result);
   },
+
+  async getSettings(req, res) {
+    const result = await AdminService.getSettings();
+    return success(res, result);
+  },
+
+  async updateSettings(req, res) {
+    const result = await AdminService.updateSettings(req.body);
+    return success(res, result, '设置已保存');
+  },
 };
 
 module.exports = AdminController;

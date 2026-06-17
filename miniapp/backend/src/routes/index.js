@@ -6,6 +6,7 @@ const authRoute = require('./auth.route');
 const orderRoute = require('./order.route');
 const adminRoute = require('./admin.route');
 const paymentRoute = require('./payment.route');
+const settingRoute = require('./setting.route');
 const OrderController = require('../controllers/order.controller');
 const asyncHandler = require('../middlewares/asyncHandler');
 
@@ -21,6 +22,8 @@ router.use('/users', userRoute);
 
 // 邮箱认证(注册/登录/发码,公开接口)
 router.use('/auth', authRoute);
+
+router.use('/settings', settingRoute);
 
 router.use('/payment', paymentRoute);
 
