@@ -21,8 +21,9 @@
 │   └── src/
 │       ├── api/        axios 封装 + auth 接口
 │       ├── stores/     Pinia auth store
-│       ├── router/     路由 + 登录守卫
-│       └── views/      LoginView / RegisterView / HomeView
+│       ├── router/     路由 + 角色守卫(requiresAuth / requiresAdmin)
+│       ├── layouts/    DefaultLayout(前台顶栏)/ AdminLayout(后台侧边栏)
+│       └── views/      auth/(Login/Register/ForgotPassword)、user/(Home/Profile)、admin/(Dashboard)
 └── docs/superpowers/  设计文档(specs)与实现计划(plans)
 ```
 
@@ -41,6 +42,22 @@ cd frontend && npm install && npm run dev
 
 浏览器打开 http://localhost:5173 ,先注册再登录。
 
+### 首个管理员
+
+系统没有内置管理员,首个管理员靠手动 SQL 提权:先注册一个普通账号,再把它提为 `admin`:
+
+```sql
+UPDATE users SET role='admin' WHERE email='你的邮箱';
+```
+
+也可直接用容器执行:
+
+```bash
+docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SET role='admin' WHERE email='你的邮箱';"
+```
+
+> 提权后需**重新登录**,新签发的 token 才带 admin 角色。
+
 > 未配置 SMTP 时,验证码会打印到**后端控制台**,且开发模式下接口会直接返回 code,
 > 注册页也会显示出来,本地无需真实邮箱即可走通。
 
@@ -51,6 +68,9 @@ cd frontend && npm install && npm run dev
 | POST | `/api/auth/send-code` | 发送注册验证码(`{email}`),60s 冷却 |
 | POST | `/api/auth/register`  | 注册(`{email,password,code}`),注册即登录,返回 `{token,user}` |
 | POST | `/api/auth/login`     | 登录(`{email,password}`),返回 `{token,user}` |
+| POST | `/api/auth/forgot-password` | 发送重置密码验证码(`{email}`) |
+| POST | `/api/auth/reset-password`  | 用验证码重置密码(`{email,code,password}`) |
+| GET  | `/api/admin/ping`     | 仅管理员;验证后端鉴权链路 |
 
 - 密码用 `bcrypt` 加盐哈希入库,绝不存明文。
 - 登录态复用现有 JWT + Redis 会话(`session:{userId}`)。
@@ -60,6 +80,16 @@ cd frontend && npm install && npm run dev
 
 `users` 表在原微信用户表基础上,新增 `email`(唯一)、`password_hash`,并把 `openid` 改为可空
 (邮箱用户没有 openid)。变更见 `backend/sql/migrations/001_add_email_auth.sql`。
+
+`users` 表另有 `role` 字段(`user` / `admin`,默认 `user`)。角色随 JWT 携带:
+后端 `admin` 中间件校验角色、前端路由守卫控制后台访问,二者共同把守后台。
+
+## 前端结构
+
+- 新增 `frontend/src/layouts/`:`DefaultLayout`(前台顶栏)/ `AdminLayout`(后台侧边栏)。
+- 双布局:前台页面(`user/Home`、`user/Profile`)用顶栏布局,后台页面(`admin/*`)用侧边栏布局。
+- 新增页面:`auth/ForgotPasswordView`、`user/ProfileView`、`admin/DashboardView`。
+- 路由按角色守卫:未登录访问需鉴权页跳 `/login`;非管理员访问 `/admin/*` 跳 `/home`。
 
 ## 说明
 
