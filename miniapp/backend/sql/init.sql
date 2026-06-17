@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password_hash` VARCHAR(255) NULL COMMENT 'bcrypt 哈希后的密码',
   `nickname`      VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '昵称',
   `avatar_url`    VARCHAR(512) NOT NULL DEFAULT '' COMMENT '头像 URL',
+  `role`          VARCHAR(16)  NOT NULL DEFAULT 'user' COMMENT '角色: user / admin',
   `created_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
