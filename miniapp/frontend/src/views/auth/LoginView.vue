@@ -35,6 +35,7 @@ async function onSubmit() {
         {{ loading ? '登录中...' : '登录' }}
       </button>
       <p class="text-sm text-center">没有账号?<router-link to="/register" class="text-blue-600">去注册</router-link></p>
+      <p class="text-sm text-center"><router-link to="/forgot-password" class="text-gray-500">忘记密码?</router-link></p>
     </form>
   </div>
 </template>
