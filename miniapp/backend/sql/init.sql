@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `nickname`      VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '昵称',
   `avatar_url`    VARCHAR(512) NOT NULL DEFAULT '' COMMENT '头像 URL',
   `role`          VARCHAR(16)  NOT NULL DEFAULT 'user' COMMENT '角色: user / admin',
+  `status`        VARCHAR(16)  NOT NULL DEFAULT 'active' COMMENT '状态: active / disabled',
   `created_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
