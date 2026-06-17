@@ -18,6 +18,7 @@ function logout() {
       <nav class="flex items-center gap-4 text-sm">
         <router-link to="/home" class="text-gray-700 hover:text-blue-600">首页</router-link>
         <router-link to="/profile" class="text-gray-700 hover:text-blue-600">个人资料</router-link>
+        <router-link to="/orders" class="text-gray-700 hover:text-blue-600">我的订单</router-link>
         <router-link v-if="auth.isAdmin" to="/admin/dashboard" class="text-gray-700 hover:text-blue-600">后台</router-link>
         <span class="text-gray-400">{{ auth.user?.email }}</span>
         <button @click="logout" class="text-red-500 hover:underline">退出</button>

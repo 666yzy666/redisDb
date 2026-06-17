@@ -19,6 +19,7 @@ const routes = [
     children: [
       { path: 'home', component: () => import('../views/HomeView.vue') },
       { path: 'profile', component: () => import('../views/user/ProfileView.vue') },
+      { path: 'orders', component: () => import('../views/user/OrdersView.vue') },
     ],
   },
 
@@ -30,6 +31,7 @@ const routes = [
     children: [
       { path: 'dashboard', component: () => import('../views/admin/DashboardView.vue') },
       { path: 'users', component: () => import('../views/admin/UsersView.vue') },
+      { path: 'orders', component: () => import('../views/admin/OrdersView.vue') },
     ],
   },
 ];

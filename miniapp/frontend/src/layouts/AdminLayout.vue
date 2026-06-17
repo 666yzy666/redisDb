@@ -18,6 +18,7 @@ function logout() {
       <nav class="flex-1 p-2 space-y-1 text-sm">
         <router-link to="/admin/dashboard" class="block px-3 py-2 rounded hover:bg-gray-700">仪表盘</router-link>
         <router-link to="/admin/users" class="block px-3 py-2 rounded hover:bg-gray-700">用户管理</router-link>
+        <router-link to="/admin/orders" class="block px-3 py-2 rounded hover:bg-gray-700">订单管理</router-link>
         <!-- SP2 起在此加：用户管理 / 订单 等 -->
       </nav>
       <router-link to="/home" class="px-4 py-3 text-xs text-gray-400 hover:text-white border-t border-gray-700">← 返回前台</router-link>
