@@ -71,6 +71,9 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 | POST | `/api/auth/forgot-password` | 发送重置密码验证码(`{email}`) |
 | POST | `/api/auth/reset-password`  | 用验证码重置密码(`{email,code,password}`) |
 | GET  | `/api/admin/ping`     | 仅管理员;验证后端鉴权链路 |
+| GET  | `/api/admin/users?page=&pageSize=&email=` | 用户列表(分页 + 邮箱模糊搜索),仅管理员 |
+| PATCH | `/api/admin/users/:id/role`   | 改角色 user↔admin(不能改自己),仅管理员 |
+| PATCH | `/api/admin/users/:id/status` | 启用/禁用(active/disabled,不能禁用自己),仅管理员 |
 
 - 密码用 `bcrypt` 加盐哈希入库,绝不存明文。
 - 登录态复用现有 JWT + Redis 会话(`session:{userId}`)。
@@ -84,11 +87,18 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 `users` 表另有 `role` 字段(`user` / `admin`,默认 `user`)。角色随 JWT 携带:
 后端 `admin` 中间件校验角色、前端路由守卫控制后台访问,二者共同把守后台。
 
+`users` 表新增 `status` 字段(`active` / `disabled`,默认 `active`):
+
+- 禁用 = 阻止登录(登录返回「账号已被禁用」)+ 删除该用户 Redis 会话(已登录的会被踢下线)。
+- 管理员不能禁用 / 降级自己(后端返回 400,前端灰掉本人行)。
+
 ## 前端结构
 
 - 新增 `frontend/src/layouts/`:`DefaultLayout`(前台顶栏)/ `AdminLayout`(后台侧边栏)。
 - 双布局:前台页面(`user/Home`、`user/Profile`)用顶栏布局,后台页面(`admin/*`)用侧边栏布局。
 - 新增页面:`auth/ForgotPasswordView`、`user/ProfileView`、`admin/DashboardView`。
+- 新增后台「用户管理」页 `frontend/src/views/admin/UsersView.vue`(表格 + 邮箱搜索 + 分页 + 改角色 / 启用禁用),AdminLayout 侧边栏新增「用户管理」入口。
+- 新增 `frontend/src/api/admin.js`(`listUsers` / `setUserRole` / `setUserStatus`)。
 - 路由按角色守卫:未登录访问需鉴权页跳 `/login`;非管理员访问 `/admin/*` 跳 `/home`。
 
 ## 说明
