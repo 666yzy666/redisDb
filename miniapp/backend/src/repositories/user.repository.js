@@ -48,6 +48,13 @@ const UserRepository = {
     );
     return result.insertId;
   },
+
+  async updatePassword(id, passwordHash) {
+    await getPool().execute(
+      'UPDATE users SET password_hash = :passwordHash WHERE id = :id',
+      { id, passwordHash }
+    );
+  },
 };
 
 module.exports = UserRepository;

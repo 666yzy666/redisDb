@@ -4,6 +4,7 @@ const express = require('express');
 const userRoute = require('./user.route');
 const authRoute = require('./auth.route');
 const orderRoute = require('./order.route');
+const adminRoute = require('./admin.route');
 const OrderController = require('../controllers/order.controller');
 const asyncHandler = require('../middlewares/asyncHandler');
 
@@ -19,6 +20,8 @@ router.use('/users', userRoute);
 
 // 邮箱认证(注册/登录/发码,公开接口)
 router.use('/auth', authRoute);
+
+router.use('/admin', adminRoute);
 
 // 商品列表为公开接口，单独挂载（不需要登录即可浏览）
 router.get('/products', asyncHandler(OrderController.listProducts));

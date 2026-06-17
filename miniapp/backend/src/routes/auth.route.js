@@ -10,5 +10,7 @@ const router = express.Router();
 router.post('/send-code', asyncHandler(AuthController.sendCode));
 router.post('/register', asyncHandler(AuthController.register));
 router.post('/login', asyncHandler(AuthController.login));
+router.post('/forgot-password', asyncHandler(AuthController.forgotPassword));
+router.post('/reset-password', asyncHandler(AuthController.resetPassword));
 
 module.exports = router;

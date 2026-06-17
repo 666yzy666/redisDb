@@ -22,6 +22,18 @@ const AuthController = {
     const result = await AuthService.login(email, password);
     return success(res, result, '登录成功');
   },
+
+  async forgotPassword(req, res) {
+    const { email } = req.body;
+    const result = await AuthService.sendResetCode(email);
+    return success(res, result, '验证码已发送');
+  },
+
+  async resetPassword(req, res) {
+    const { email, code, password } = req.body;
+    const result = await AuthService.resetPassword(email, code, password);
+    return success(res, result, '密码已重置');
+  },
 };
 
 module.exports = AuthController;

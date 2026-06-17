@@ -15,6 +15,8 @@ const SESSION_TTL = 7 * 24 * 3600;
 const codeKey = (email) => `verify:register:${email}`;
 const cooldownKey = (email) => `verify:cooldown:${email}`;
 const sessionKey = (userId) => `session:${userId}`;
+const resetCodeKey = (email) => `verify:reset:${email}`;
+const resetCdKey = (email) => `verify:reset-cd:${email}`;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -107,6 +109,49 @@ const AuthService = {
     if (!ok) throw ApiError.unauthorized('邮箱或密码错误');
 
     return issueSession(user);
+  },
+
+  // 发送重置密码验证码(账号不存在时静默,不泄露)
+  async sendResetCode(email) {
+    assertEmail(email);
+    const redis = getRedis();
+    if (await redis.get(resetCdKey(email))) {
+      throw ApiError.badRequest('验证码发送过于频繁,请稍后再试', 42900);
+    }
+    const user = await UserRepository.findByEmail(email);
+    if (user) {
+      const code = genCode();
+      await redis.set(resetCodeKey(email), code, 'EX', config.verify.codeTtl);
+      await redis.set(resetCdKey(email), '1', 'EX', config.verify.cooldown);
+      await emailService.sendMail(
+        email,
+        '重置密码验证码',
+        `您的重置验证码是 ${code},${Math.floor(config.verify.codeTtl / 60)} 分钟内有效。`
+      );
+      logger.info(`已为 ${email} 生成重置验证码`);
+      return config.env === 'development' ? { sent: true, code } : { sent: true };
+    }
+    return { sent: true };
+  },
+
+  // 用验证码重置密码
+  async resetPassword(email, code, password) {
+    assertEmail(email);
+    assertPassword(password);
+    if (!code) throw ApiError.badRequest('请输入验证码');
+
+    const redis = getRedis();
+    const real = await redis.get(resetCodeKey(email));
+    if (!real || real !== String(code)) {
+      throw ApiError.badRequest('验证码错误或已过期', 40010);
+    }
+    const user = await UserRepository.findByEmail(email);
+    if (!user) throw ApiError.badRequest('账号不存在', 40012);
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    await UserRepository.updatePassword(user.id, passwordHash);
+    await redis.del(resetCodeKey(email));
+    return { reset: true };
   },
 };
 
