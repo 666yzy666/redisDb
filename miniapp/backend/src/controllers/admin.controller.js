@@ -37,6 +37,31 @@ const AdminController = {
     const result = await AdminService.updateSettings(req.body);
     return success(res, result, '设置已保存');
   },
+
+  async listAnnouncements(req, res) {
+    const result = await AdminService.listAnnouncements(req.query);
+    return success(res, result);
+  },
+  async createAnnouncement(req, res) {
+    const item = await AdminService.createAnnouncement(req.body);
+    return success(res, item, '已创建');
+  },
+  async updateAnnouncement(req, res) {
+    const item = await AdminService.updateAnnouncement(Number(req.params.id), req.body);
+    return success(res, item, '已更新');
+  },
+  async setAnnouncementPublished(req, res) {
+    const item = await AdminService.setAnnouncementPublished(Number(req.params.id), !!req.body.published);
+    return success(res, item, '已更新发布状态');
+  },
+  async removeAnnouncement(req, res) {
+    const result = await AdminService.removeAnnouncement(Number(req.params.id));
+    return success(res, result, '已删除');
+  },
+  async getStats(req, res) {
+    const result = await AdminService.getStats();
+    return success(res, result);
+  },
 };
 
 module.exports = AdminController;

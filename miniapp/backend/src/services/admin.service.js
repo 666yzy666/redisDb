@@ -5,6 +5,9 @@ const UserRepository = require('../repositories/user.repository');
 const { getRedis } = require('../loaders/redis');
 const PaymentOrderService = require('./paymentOrder.service');
 const SettingService = require('./setting.service');
+const AnnouncementService = require('./announcement.service');
+const AnnouncementRepository = require('../repositories/announcement.repository');
+const PaymentOrderRepository = require('../repositories/paymentOrder.repository');
 
 const MAX_PAGE_SIZE = 100;
 const sessionKey = (userId) => `session:${userId}`;
@@ -79,6 +82,27 @@ const AdminService = {
 
   async updateSettings(body) {
     return SettingService.updateMany(body || {});
+  },
+
+  listAnnouncements(params) { return AnnouncementService.listForAdmin(params); },
+  createAnnouncement(data) { return AnnouncementService.create(data); },
+  updateAnnouncement(id, data) { return AnnouncementService.update(id, data); },
+  setAnnouncementPublished(id, published) { return AnnouncementService.setPublished(id, published); },
+  removeAnnouncement(id) { return AnnouncementService.remove(id); },
+
+  async getStats() {
+    const [users, orderStats, announcements] = await Promise.all([
+      UserRepository.countUsers({ email: '' }),
+      PaymentOrderRepository.stats(),
+      AnnouncementRepository.countAll(),
+    ]);
+    return {
+      users,
+      orders: orderStats.total,
+      paidOrders: orderStats.paid,
+      paidAmount: orderStats.paidAmount,
+      announcements,
+    };
   },
 };
 

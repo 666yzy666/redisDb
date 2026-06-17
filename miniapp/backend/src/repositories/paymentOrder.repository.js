@@ -56,6 +56,14 @@ const PaymentOrderRepository = {
     return rows[0].total;
   },
 
+  async stats() {
+    const [rows] = await getPool().query(
+      "SELECT COUNT(*) AS total, SUM(status='paid') AS paid, COALESCE(SUM(CASE WHEN status='paid' THEN amount ELSE 0 END),0) AS paidAmount FROM payment_orders"
+    );
+    const r = rows[0] || {};
+    return { total: Number(r.total) || 0, paid: Number(r.paid) || 0, paidAmount: Number(r.paidAmount) || 0 };
+  },
+
   // 守卫式:仅 pending 才能转 paid;返回 affectedRows(幂等关键)
   async markPaid(id, channel) {
     const [result] = await getPool().execute(

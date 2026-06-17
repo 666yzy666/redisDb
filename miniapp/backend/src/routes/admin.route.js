@@ -27,4 +27,11 @@ router.get('/orders', asyncHandler(AdminController.listOrders));
 router.get('/settings', asyncHandler(AdminController.getSettings));
 router.put('/settings', asyncHandler(AdminController.updateSettings));
 
+router.get('/stats', asyncHandler(AdminController.getStats));
+router.get('/announcements', asyncHandler(AdminController.listAnnouncements));
+router.post('/announcements', asyncHandler(AdminController.createAnnouncement));
+router.put('/announcements/:id', asyncHandler(AdminController.updateAnnouncement));
+router.patch('/announcements/:id/publish', asyncHandler(AdminController.setAnnouncementPublished));
+router.delete('/announcements/:id', asyncHandler(AdminController.removeAnnouncement));
+
 module.exports = router;

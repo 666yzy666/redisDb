@@ -7,6 +7,7 @@ const orderRoute = require('./order.route');
 const adminRoute = require('./admin.route');
 const paymentRoute = require('./payment.route');
 const settingRoute = require('./setting.route');
+const announcementRoute = require('./announcement.route');
 const OrderController = require('../controllers/order.controller');
 const asyncHandler = require('../middlewares/asyncHandler');
 
@@ -28,6 +29,8 @@ router.use('/settings', settingRoute);
 router.use('/payment', paymentRoute);
 
 router.use('/admin', adminRoute);
+
+router.use('/announcements', announcementRoute);
 
 // 商品列表为公开接口，单独挂载（不需要登录即可浏览）
 router.get('/products', asyncHandler(OrderController.listProducts));
