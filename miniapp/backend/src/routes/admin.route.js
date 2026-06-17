@@ -22,4 +22,6 @@ router.get('/users', asyncHandler(AdminController.listUsers));
 router.patch('/users/:id/role', asyncHandler(AdminController.setRole));
 router.patch('/users/:id/status', asyncHandler(AdminController.setStatus));
 
+router.get('/orders', asyncHandler(AdminController.listOrders));
+
 module.exports = router;

@@ -3,6 +3,7 @@
 const ApiError = require('../utils/ApiError');
 const UserRepository = require('../repositories/user.repository');
 const { getRedis } = require('../loaders/redis');
+const PaymentOrderService = require('./paymentOrder.service');
 
 const MAX_PAGE_SIZE = 100;
 const sessionKey = (userId) => `session:${userId}`;
@@ -65,6 +66,10 @@ const AdminService = {
       await getRedis().del(sessionKey(targetId)); // 立即踢下线
     }
     return toSafe({ ...user, status });
+  },
+
+  async listOrders({ page, pageSize, status }) {
+    return PaymentOrderService.listAllForAdmin({ page, pageSize, status });
   },
 };
 

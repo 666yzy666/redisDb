@@ -21,6 +21,12 @@ const AdminController = {
     const user = await AdminService.setStatus(req.user.userId, req.params.id, status);
     return success(res, user, '状态已更新');
   },
+
+  async listOrders(req, res) {
+    const { page, pageSize, status } = req.query;
+    const result = await AdminService.listOrders({ page, pageSize, status });
+    return success(res, result);
+  },
 };
 
 module.exports = AdminController;
