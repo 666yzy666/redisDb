@@ -81,6 +81,16 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 | POST | `/api/payment/notify/:channel` | 支付网关回调 → 订单转 paid(幂等),无鉴权 |
 | POST | `/api/payment/mock/complete` | 本地模拟网关完成支付(`{orderNo}`),需登录 |
 | GET  | `/api/admin/orders?page=&pageSize=&status=` | 所有订单分页(status 可选),仅管理员 |
+| GET  | `/api/settings/public` | 公开设置(站名 + 是否开放注册),无鉴权 |
+| GET  | `/api/admin/settings` | 读取设置,仅管理员 |
+| PUT  | `/api/admin/settings` | 更新设置(site_name / registration_open),仅管理员 |
+| GET  | `/api/announcements` | 已发布公告列表,需登录 |
+| GET  | `/api/admin/announcements` | 全部公告分页,仅管理员 |
+| POST | `/api/admin/announcements` | 新建公告(草稿),仅管理员 |
+| PUT  | `/api/admin/announcements/:id` | 编辑公告,仅管理员 |
+| PATCH | `/api/admin/announcements/:id/publish` | 上/下架(`{published}`),仅管理员 |
+| DELETE | `/api/admin/announcements/:id` | 删除公告,仅管理员 |
+| GET  | `/api/admin/stats` | 仪表盘统计,仅管理员 |
 
 - 密码用 `bcrypt` 加盐哈希入库,绝不存明文。
 - 登录态复用现有 JWT + Redis 会话(`session:{userId}`)。
@@ -107,6 +117,13 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 - markPaid 用守卫式 `UPDATE ... WHERE status='pending'`,保证回调幂等(多次回调只第一次生效)。
 - 订单状态:`pending` / `paid` / `cancelled`。
 
+## 后台基础(SP4)
+
+- 新增 `announcements`(标题 / 内容 / `published` 草稿或发布)、`settings`(键值)两表。
+- 系统设置驱动行为:`site_name`(前端顶栏显示)、`registration_open`(关闭则注册接口返回「注册已关闭」)。设置经白名单写入。
+- 公告:管理员可新建 / 编辑 / 上下架 / 删除;登录用户只看已发布(`published=1`)的公告。
+- 仪表盘:`/api/admin/stats` 返回 `{users, orders, paidOrders, paidAmount, announcements}` 真实统计。
+
 ## 前端结构
 
 - 新增 `frontend/src/layouts/`:`DefaultLayout`(前台顶栏)/ `AdminLayout`(后台侧边栏)。
@@ -117,6 +134,9 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 - 路由按角色守卫:未登录访问需鉴权页跳 `/login`;非管理员访问 `/admin/*` 跳 `/home`。
 - 新增用户端 `views/user/OrdersView.vue`(下单 + 我的订单 + 去支付 / 取消)、后台 `views/admin/OrdersView.vue`(所有订单 + 状态筛选 + 分页)、`api/payment.js`。
 - 顶栏新增「我的订单」,后台侧边栏新增「订单管理」。
+- 后台 `views/admin/DashboardView.vue`(真实统计卡片)、`views/admin/AnnouncementsView.vue`(公告 CRUD)、`views/admin/SettingsView.vue`(站名 + 注册开关);用户端 `views/user/AnnouncementsView.vue`。
+- 新增 `api/settings.js`、`api/announcement.js`;`stores/app.js`(启动加载公开设置,顶栏显示站名)。
+- AdminLayout 侧边栏新增「公告」「系统设置」;DefaultLayout 顶栏新增「公告」,站名改为动态。
 
 ## 说明
 
