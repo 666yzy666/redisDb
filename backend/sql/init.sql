@@ -8,14 +8,17 @@ CREATE DATABASE IF NOT EXISTS `miniapp`
 USE `miniapp`;
 
 CREATE TABLE IF NOT EXISTS `users` (
-  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `openid`     VARCHAR(64)  NOT NULL COMMENT '微信 openid',
-  `nickname`   VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '昵称',
-  `avatar_url` VARCHAR(512) NOT NULL DEFAULT '' COMMENT '头像 URL',
-  `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `openid`        VARCHAR(64)  NULL COMMENT '微信 openid(邮箱用户为空)',
+  `email`         VARCHAR(255) NULL COMMENT '登录邮箱',
+  `password_hash` VARCHAR(255) NULL COMMENT 'bcrypt 哈希后的密码',
+  `nickname`      VARCHAR(64)  NOT NULL DEFAULT '' COMMENT '昵称',
+  `avatar_url`    VARCHAR(512) NOT NULL DEFAULT '' COMMENT '头像 URL',
+  `created_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_openid` (`openid`)
+  UNIQUE KEY `uk_openid` (`openid`),
+  UNIQUE KEY `uk_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序用户表';
 
 -- ===== 电商订单模块 =====
