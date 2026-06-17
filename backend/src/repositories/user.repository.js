@@ -31,6 +31,23 @@ const UserRepository = {
       { id, nickname, avatarUrl }
     );
   },
+
+  // 邮箱认证用：显式选取 email/password_hash(findById 没选这两列)
+  async findByEmail(email) {
+    const [rows] = await getPool().execute(
+      'SELECT id, email, password_hash, nickname, avatar_url, created_at FROM users WHERE email = :email LIMIT 1',
+      { email }
+    );
+    return rows[0] || null;
+  },
+
+  async createEmailUser({ email, passwordHash, nickname }) {
+    const [result] = await getPool().execute(
+      'INSERT INTO users (email, password_hash, nickname) VALUES (:email, :passwordHash, :nickname)',
+      { email, passwordHash, nickname: nickname || '' }
+    );
+    return result.insertId;
+  },
 };
 
 module.exports = UserRepository;

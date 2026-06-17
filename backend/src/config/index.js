@@ -32,6 +32,19 @@ const config = {
     secret: process.env.JWT_SECRET || 'dev_secret',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
+
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: Number(process.env.SMTP_PORT) || 587,
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'no-reply@example.com',
+  },
+
+  verify: {
+    codeTtl: Number(process.env.VERIFY_CODE_TTL) || 300,    // 验证码有效期(秒)
+    cooldown: Number(process.env.VERIFY_COOLDOWN) || 60,    // 发码冷却(秒)
+  },
 };
 
 module.exports = config;
