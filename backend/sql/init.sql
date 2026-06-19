@@ -1,6 +1,10 @@
 -- 初始化数据库与表
 -- 用法: mysql -u root -p < sql/init.sql
 
+-- 确保本会话用 utf8mb4,否则容器初始化时中文(如'机械键盘'/'MiniApp 框架')会被
+-- 按 latin1 重新编码,存成乱码(双重编码)。
+SET NAMES utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS `miniapp`
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
