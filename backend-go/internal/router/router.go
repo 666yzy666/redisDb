@@ -50,6 +50,9 @@ func Setup(cfg *config.Config, rdb *redis.Client, h Handlers) *gin.Engine {
 		ad := api.Group("/admin", auth, admin)
 		{
 			ad.GET("/ping", h.Admin.Ping)
+			ad.GET("/users", h.Admin.ListUsers)
+			ad.PATCH("/users/:id/role", h.Admin.SetRole)
+			ad.PATCH("/users/:id/status", h.Admin.SetStatus)
 		}
 	}
 

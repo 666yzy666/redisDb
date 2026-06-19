@@ -34,6 +34,7 @@ func main() {
 	emailSvc := service.NewEmailService(cfg)
 	authSvc := service.NewAuthService(cfg, userRepo, rdb, emailSvc)
 	userSvc := service.NewUserService(userRepo)
+	adminSvc := service.NewAdminService(cfg, userRepo, rdb)
 
 	// 首启自动建管理员
 	if err := service.EnsureAdmin(cfg, userRepo); err != nil {
@@ -43,7 +44,7 @@ func main() {
 	r := router.Setup(cfg, rdb, router.Handlers{
 		Auth:  handler.NewAuthHandler(authSvc),
 		User:  handler.NewUserHandler(userSvc),
-		Admin: handler.NewAdminHandler(),
+		Admin: handler.NewAdminHandler(adminSvc),
 	})
 
 	addr := ":" + cfg.Port

@@ -78,3 +78,35 @@ func (r *UserRepo) UpdateProfile(id int64, nickname, avatarURL string) error {
 	_, err := r.db.Exec(`UPDATE users SET nickname = ?, avatar_url = ? WHERE id = ?`, nickname, avatarURL, id)
 	return err
 }
+
+func (r *UserRepo) UpdateStatus(id int64, status string) error {
+	_, err := r.db.Exec(`UPDATE users SET status = ? WHERE id = ?`, status, id)
+	return err
+}
+
+// ListUsers 分页 + 邮箱模糊搜索(email 为空则不过滤)
+func (r *UserRepo) ListUsers(email string, limit, offset int) ([]User, error) {
+	rows := []User{}
+	var err error
+	if email != "" {
+		err = r.db.Select(&rows,
+			`SELECT id, email, role, status, nickname, created_at FROM users
+			 WHERE email LIKE ? ORDER BY id DESC LIMIT ? OFFSET ?`, "%"+email+"%", limit, offset)
+	} else {
+		err = r.db.Select(&rows,
+			`SELECT id, email, role, status, nickname, created_at FROM users
+			 ORDER BY id DESC LIMIT ? OFFSET ?`, limit, offset)
+	}
+	return rows, err
+}
+
+func (r *UserRepo) CountUsers(email string) (int, error) {
+	var total int
+	var err error
+	if email != "" {
+		err = r.db.Get(&total, `SELECT COUNT(*) FROM users WHERE email LIKE ?`, "%"+email+"%")
+	} else {
+		err = r.db.Get(&total, `SELECT COUNT(*) FROM users`)
+	}
+	return total, err
+}
