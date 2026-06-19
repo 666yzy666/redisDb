@@ -12,10 +12,12 @@ import (
 )
 
 type Handlers struct {
-	Auth    *handler.AuthHandler
-	User    *handler.UserHandler
-	Admin   *handler.AdminHandler
-	Payment *handler.PaymentHandler
+	Auth         *handler.AuthHandler
+	User         *handler.UserHandler
+	Admin        *handler.AdminHandler
+	Payment      *handler.PaymentHandler
+	Announcement *handler.AnnouncementHandler
+	Setting      *handler.SettingHandler
 }
 
 // Setup 注册路由
@@ -47,6 +49,12 @@ func Setup(cfg *config.Config, rdb *redis.Client, h Handlers) *gin.Engine {
 			u.PUT("/profile", h.User.UpdateProfile)
 		}
 
+		// 公开设置
+		api.GET("/settings/public", h.Setting.GetPublic)
+
+		// 公告(登录用户:已发布)
+		api.GET("/announcements", auth, h.Announcement.ListForUser)
+
 		// 付款订单
 		p := api.Group("/payment")
 		{
@@ -69,6 +77,16 @@ func Setup(cfg *config.Config, rdb *redis.Client, h Handlers) *gin.Engine {
 			ad.PATCH("/users/:id/role", h.Admin.SetRole)
 			ad.PATCH("/users/:id/status", h.Admin.SetStatus)
 			ad.GET("/orders", h.Payment.AdminListOrders)
+
+			ad.GET("/settings", h.Setting.AdminGet)
+			ad.PUT("/settings", h.Setting.AdminUpdate)
+			ad.GET("/stats", h.Setting.Stats)
+
+			ad.GET("/announcements", h.Announcement.AdminList)
+			ad.POST("/announcements", h.Announcement.AdminCreate)
+			ad.PUT("/announcements/:id", h.Announcement.AdminUpdate)
+			ad.PATCH("/announcements/:id/publish", h.Announcement.AdminSetPublished)
+			ad.DELETE("/announcements/:id", h.Announcement.AdminRemove)
 		}
 	}
 

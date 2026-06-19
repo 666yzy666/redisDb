@@ -18,14 +18,15 @@ import (
 )
 
 type AuthService struct {
-	cfg   *config.Config
-	users *repository.UserRepo
-	rdb   *redis.Client
-	email *EmailService
+	cfg      *config.Config
+	users    *repository.UserRepo
+	rdb      *redis.Client
+	email    *EmailService
+	settings *SettingService
 }
 
-func NewAuthService(cfg *config.Config, users *repository.UserRepo, rdb *redis.Client, email *EmailService) *AuthService {
-	return &AuthService{cfg: cfg, users: users, rdb: rdb, email: email}
+func NewAuthService(cfg *config.Config, users *repository.UserRepo, rdb *redis.Client, email *EmailService, settings *SettingService) *AuthService {
+	return &AuthService{cfg: cfg, users: users, rdb: rdb, email: email, settings: settings}
 }
 
 // SafeUser 对外返回的用户字段(不含密码哈希)
@@ -106,6 +107,11 @@ func (s *AuthService) SendRegisterCode(ctx context.Context, email string) (map[s
 
 // Register 注册即登录
 func (s *AuthService) Register(ctx context.Context, email, password, code string) (map[string]any, error) {
+	if open, err := s.settings.IsRegistrationOpen(); err != nil {
+		return nil, err
+	} else if !open {
+		return nil, httpx.Forbidden("注册已关闭")
+	}
 	if err := assertEmail(email); err != nil {
 		return nil, err
 	}
