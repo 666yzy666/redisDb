@@ -58,7 +58,7 @@ services:
       MYSQL_DATABASE: miniapp
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # 首启自动建全部表
+      - ./backend-go/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # 首启自动建表
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_PASSWORD:-123456}"]
       interval: 5s

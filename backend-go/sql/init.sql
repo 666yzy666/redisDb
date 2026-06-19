@@ -1,7 +1,8 @@
--- 初始化数据库与表
--- 用法: mysql -u root -p < sql/init.sql
+-- 初始化数据库与表(Go 版框架:邮箱认证 + 用户管理 + 付款订单 + 后台公告/设置)
+-- docker-compose 把本文件挂到 mysql 的 /docker-entrypoint-initdb.d/,容器首启自动执行。
+-- 手动执行: mysql -u root -p < sql/init.sql
 
--- 确保本会话用 utf8mb4,否则容器初始化时中文(如'机械键盘'/'MiniApp 框架')会被
+-- 确保本会话用 utf8mb4,否则容器初始化时中文(如 'MiniApp 框架')会被
 -- 按 latin1 重新编码,存成乱码(双重编码)。
 SET NAMES utf8mb4;
 
@@ -11,6 +12,7 @@ CREATE DATABASE IF NOT EXISTS `miniapp`
 
 USE `miniapp`;
 
+-- ===== 用户 =====
 CREATE TABLE IF NOT EXISTS `users` (
   `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `openid`        VARCHAR(64)  NULL COMMENT '微信 openid(邮箱用户为空)',
@@ -25,54 +27,9 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_openid` (`openid`),
   UNIQUE KEY `uk_email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小程序用户表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
--- ===== 电商订单模块 =====
-
--- 商品表
-CREATE TABLE IF NOT EXISTS `products` (
-  `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name`       VARCHAR(128)    NOT NULL COMMENT '商品名',
-  `price`      DECIMAL(10,2)   NOT NULL COMMENT '单价（元）',
-  `stock`      INT UNSIGNED    NOT NULL DEFAULT 0 COMMENT '库存',
-  `created_at` TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品表';
-
--- 订单表：status 是状态机的核心字段
-CREATE TABLE IF NOT EXISTS `orders` (
-  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id`      BIGINT UNSIGNED NOT NULL COMMENT '下单用户',
-  `status`       VARCHAR(16)     NOT NULL DEFAULT 'pending'
-                 COMMENT '状态: pending/paid/shipped/completed/cancelled',
-  `total_amount` DECIMAL(10,2)   NOT NULL DEFAULT 0 COMMENT '订单总额（下单时快照）',
-  `created_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at`   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_user` (`user_id`, `created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单表';
-
--- 订单明细表：下单时快照商品名与价格，商品后续改价不影响历史订单
-CREATE TABLE IF NOT EXISTS `order_items` (
-  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `order_id`     BIGINT UNSIGNED NOT NULL,
-  `product_id`   BIGINT UNSIGNED NOT NULL,
-  `product_name` VARCHAR(128)    NOT NULL COMMENT '下单时的商品名快照',
-  `price`        DECIMAL(10,2)   NOT NULL COMMENT '下单时的单价快照',
-  `quantity`     INT UNSIGNED    NOT NULL COMMENT '购买数量',
-  PRIMARY KEY (`id`),
-  KEY `idx_order` (`order_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单明细表';
-
--- 种几条商品，方便直接下单
-INSERT INTO `products` (`name`, `price`, `stock`) VALUES
-  ('机械键盘', 299.00, 100),
-  ('无线鼠标', 99.00, 200),
-  ('USB-C 数据线', 29.90, 500)
-ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
-
--- ===== 框架付款订单 =====
+-- ===== 付款订单 =====
 CREATE TABLE IF NOT EXISTS `payment_orders` (
   `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `order_no`   VARCHAR(64)     NOT NULL COMMENT '业务订单号,支付回调对账用',
@@ -87,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `payment_orders` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order_no` (`order_no`),
   KEY `idx_user` (`user_id`, `created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='付款订单(框架通用)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='付款订单';
 
 -- ===== 后台基础:公告 + 设置 =====
 CREATE TABLE IF NOT EXISTS `announcements` (
