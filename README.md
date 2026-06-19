@@ -143,6 +143,9 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 前后端 + MySQL + Redis 四个容器一起跑,用 `deploy.sh` 操作:
 
 ```bash
+# (可选)配置密钥/邮箱:不建 .env 也能跑(用缺省值);要改密钥或真发邮件才需要
+cp .env.example .env      # 然后填 JWT_SECRET / MYSQL_PASSWORD / SMTP_* 真实值
+
 # 在仓库根目录(redisDb/)下直接执行
 ./deploy.sh up        # 构建并启动全部(首次 mysql 初始化稍慢)
 ./deploy.sh rebuild   # 改了代码:无缓存重建 + 重新创建容器
@@ -155,7 +158,8 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 - 前端容器直接跑 Vite,`/api` 经 `VITE_PROXY_TARGET` 代理到后端容器(无 Nginx)。
 - 后端容器用服务名连 `mysql` / `redis`;MySQL 首启自动跑 `backend/sql/init.sql` 建全部表。
 - 各服务带 `restart: unless-stopped`,Docker 重启后自动拉起。
-- `NODE_ENV=production`,验证码不再走接口返回,改打到 backend 容器日志(`./deploy.sh logs`);要真发邮件在 `docker-compose.yml` 的 backend `environment` 填 SMTP_*。
+- 密钥与 SMTP 走根目录 `.env`(已 gitignore,不进仓库):compose 用 `${VAR:-默认}` 读取,模板见 `.env.example`。不建 `.env` 则用缺省值(密码 123456、SMTP 空)。
+- `NODE_ENV=production`,验证码不再走接口返回,改打到 backend 容器日志(`./deploy.sh logs`);要真发邮件就在 `.env` 填 `SMTP_HOST=smtp.qq.com` 等(部署机网络需能出站连 SMTP)。
 - 此部署用独立数据卷(`miniapp-deploy_mysql_data`),与本地 dev 的 `backend/docker-compose.yml` 数据互不影响。
 
 ## 说明

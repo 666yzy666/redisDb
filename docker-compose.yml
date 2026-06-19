@@ -10,13 +10,13 @@ services:
     container_name: miniapp-deploy-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_PASSWORD:-123456}"
       MYSQL_DATABASE: miniapp
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # 首启自动建全部表
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_PASSWORD:-123456}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -43,16 +43,20 @@ services:
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
       MYSQL_USER: root
-      MYSQL_PASSWORD: "123456"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-123456}"   # 秘密:从根 .env 读,缺省 123456
       MYSQL_DATABASE: miniapp
       MYSQL_CONNECTION_LIMIT: "10"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       REDIS_DB: "0"
-      JWT_SECRET: "change_me_to_a_long_random_string_in_prod"
+      JWT_SECRET: "${JWT_SECRET:-dev_secret_change_me}"  # 秘密:从根 .env 读
       JWT_EXPIRES_IN: "7d"
-      # SMTP 留空 => 验证码走控制台 mock。要真发邮件在此填 SMTP_HOST 等。
-      SMTP_HOST: ""
+      # SMTP:从根 .env 读。SMTP_HOST 留空 => 验证码走控制台 mock(看 backend 日志)。
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-465}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASS: "${SMTP_PASS:-}"
+      SMTP_FROM: "${SMTP_FROM:-no-reply@example.com}"
       VERIFY_CODE_TTL: "300"
       VERIFY_COOLDOWN: "60"
     ports:
