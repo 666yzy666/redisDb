@@ -45,6 +45,12 @@ const config = {
     codeTtl: Number(process.env.VERIFY_CODE_TTL) || 300,    // 验证码有效期(秒)
     cooldown: Number(process.env.VERIFY_COOLDOWN) || 60,    // 发码冷却(秒)
   },
+
+  // 首次启动自动建管理员(部署用):两者都填且该邮箱不存在时,创建一个 admin
+  admin: {
+    email: process.env.ADMIN_EMAIL || '',
+    password: process.env.ADMIN_PASSWORD || '',
+  },
 };
 
 module.exports = config;

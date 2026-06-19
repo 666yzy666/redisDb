@@ -5,11 +5,13 @@ const logger = require('./utils/logger');
 const createApp = require('./app');
 const { initMysql, closeMysql } = require('./loaders/mysql');
 const { initRedis, closeRedis } = require('./loaders/redis');
+const { ensureAdmin } = require('./services/bootstrap.service');
 
 // 启动流程：先初始化基础设施（MySQL/Redis），再监听端口
 async function bootstrap() {
   await initMysql();
   await initRedis();
+  await ensureAdmin(); // 按 ADMIN_EMAIL/ADMIN_PASSWORD 自动建管理员(已存在则跳过)
 
   const app = createApp();
   const server = app.listen(config.port, () => {
