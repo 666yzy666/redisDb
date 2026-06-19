@@ -68,3 +68,13 @@ func (r *UserRepo) UpdateRole(id int64, role string) error {
 	_, err := r.db.Exec(`UPDATE users SET role = ? WHERE id = ?`, role, id)
 	return err
 }
+
+func (r *UserRepo) UpdatePassword(id int64, passwordHash string) error {
+	_, err := r.db.Exec(`UPDATE users SET password_hash = ? WHERE id = ?`, passwordHash, id)
+	return err
+}
+
+func (r *UserRepo) UpdateProfile(id int64, nickname, avatarURL string) error {
+	_, err := r.db.Exec(`UPDATE users SET nickname = ?, avatar_url = ? WHERE id = ?`, nickname, avatarURL, id)
+	return err
+}

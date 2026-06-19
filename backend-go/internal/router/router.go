@@ -4,13 +4,24 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 
+	"miniapp/internal/config"
 	"miniapp/internal/handler"
+	"miniapp/internal/middleware"
 )
 
-// Setup 注册路由(P1:健康检查 + 邮箱认证)
-func Setup(authH *handler.AuthHandler) *gin.Engine {
+type Handlers struct {
+	Auth  *handler.AuthHandler
+	User  *handler.UserHandler
+	Admin *handler.AdminHandler
+}
+
+// Setup 注册路由
+func Setup(cfg *config.Config, rdb *redis.Client, h Handlers) *gin.Engine {
 	r := gin.Default()
+	auth := middleware.Auth(cfg, rdb)
+	admin := middleware.Admin()
 
 	api := r.Group("/api")
 	{
@@ -18,11 +29,27 @@ func Setup(authH *handler.AuthHandler) *gin.Engine {
 			c.JSON(http.StatusOK, gin.H{"code": 0, "message": "ok", "data": gin.H{"status": "up"}})
 		})
 
-		auth := api.Group("/auth")
+		// 邮箱认证(公开)
+		a := api.Group("/auth")
 		{
-			auth.POST("/send-code", authH.SendCode)
-			auth.POST("/register", authH.Register)
-			auth.POST("/login", authH.Login)
+			a.POST("/send-code", h.Auth.SendCode)
+			a.POST("/register", h.Auth.Register)
+			a.POST("/login", h.Auth.Login)
+			a.POST("/forgot-password", h.Auth.ForgotPassword)
+			a.POST("/reset-password", h.Auth.ResetPassword)
+		}
+
+		// 用户(需登录)
+		u := api.Group("/users", auth)
+		{
+			u.GET("/profile", h.User.GetProfile)
+			u.PUT("/profile", h.User.UpdateProfile)
+		}
+
+		// 后台(需登录 + 管理员)
+		ad := api.Group("/admin", auth, admin)
+		{
+			ad.GET("/ping", h.Admin.Ping)
 		}
 	}
 

@@ -52,3 +52,31 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 	httpx.SuccessMsg(c, res, "登录成功")
 }
+
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var body struct {
+		Email string `json:"email"`
+	}
+	_ = c.ShouldBindJSON(&body)
+	res, err := h.auth.SendResetCode(c.Request.Context(), body.Email)
+	if err != nil {
+		httpx.Fail(c, err)
+		return
+	}
+	httpx.SuccessMsg(c, res, "验证码已发送")
+}
+
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var body struct {
+		Email    string `json:"email"`
+		Code     string `json:"code"`
+		Password string `json:"password"`
+	}
+	_ = c.ShouldBindJSON(&body)
+	res, err := h.auth.ResetPassword(c.Request.Context(), body.Email, body.Code, body.Password)
+	if err != nil {
+		httpx.Fail(c, err)
+		return
+	}
+	httpx.SuccessMsg(c, res, "密码已重置")
+}

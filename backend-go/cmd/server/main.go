@@ -33,14 +33,18 @@ func main() {
 	userRepo := repository.NewUserRepo(database)
 	emailSvc := service.NewEmailService(cfg)
 	authSvc := service.NewAuthService(cfg, userRepo, rdb, emailSvc)
+	userSvc := service.NewUserService(userRepo)
 
 	// 首启自动建管理员
 	if err := service.EnsureAdmin(cfg, userRepo); err != nil {
 		log.Printf("[WARN] ensureAdmin 失败: %v", err)
 	}
 
-	authH := handler.NewAuthHandler(authSvc)
-	r := router.Setup(authH)
+	r := router.Setup(cfg, rdb, router.Handlers{
+		Auth:  handler.NewAuthHandler(authSvc),
+		User:  handler.NewUserHandler(userSvc),
+		Admin: handler.NewAdminHandler(),
+	})
 
 	addr := ":" + cfg.Port
 	log.Printf("Server listening on http://localhost%s (env=%s)", addr, cfg.Env)

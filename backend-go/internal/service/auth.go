@@ -49,9 +49,11 @@ func toSafe(u *repository.User) SafeUser {
 	}
 }
 
-func codeKey(email string) string     { return "verify:register:" + email }
-func cooldownKey(email string) string { return "verify:cooldown:" + email }
-func sessionKey(id int64) string      { return fmt.Sprintf("session:%d", id) }
+func codeKey(email string) string      { return "verify:register:" + email }
+func cooldownKey(email string) string  { return "verify:cooldown:" + email }
+func resetCodeKey(email string) string { return "verify:reset:" + email }
+func resetCdKey(email string) string   { return "verify:reset-cd:" + email }
+func sessionKey(id int64) string       { return fmt.Sprintf("session:%d", id) }
 
 var emailRe = func(s string) bool {
 	at := strings.IndexByte(s, '@')
@@ -160,6 +162,69 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (map[st
 		return nil, httpx.Forbidden("账号已被禁用")
 	}
 	return s.IssueSession(ctx, u)
+}
+
+// SendResetCode 发重置密码验证码(账号不存在静默,不泄露)
+func (s *AuthService) SendResetCode(ctx context.Context, email string) (map[string]any, error) {
+	if err := assertEmail(email); err != nil {
+		return nil, err
+	}
+	if exists, _ := s.rdb.Get(ctx, resetCdKey(email)).Result(); exists != "" {
+		return nil, httpx.BadRequest("验证码发送过于频繁,请稍后再试", 42900)
+	}
+	u, err := s.users.FindByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+	if u == nil {
+		return map[string]any{"sent": true}, nil // 静默
+	}
+	code := genCode()
+	ttl := time.Duration(s.cfg.VerifyCodeTTL) * time.Second
+	s.rdb.Set(ctx, resetCodeKey(email), code, ttl)
+	s.rdb.Set(ctx, resetCdKey(email), "1", time.Duration(s.cfg.VerifyCooldown)*time.Second)
+	body := fmt.Sprintf("您的重置验证码是 %s,%d 分钟内有效。", code, s.cfg.VerifyCodeTTL/60)
+	if err := s.email.Send(email, "重置密码验证码", body); err != nil {
+		return nil, err
+	}
+	res := map[string]any{"sent": true}
+	if s.cfg.IsDev() {
+		res["code"] = code
+	}
+	return res, nil
+}
+
+// ResetPassword 用验证码重置密码
+func (s *AuthService) ResetPassword(ctx context.Context, email, code, password string) (map[string]any, error) {
+	if err := assertEmail(email); err != nil {
+		return nil, err
+	}
+	if err := assertPassword(password); err != nil {
+		return nil, err
+	}
+	if code == "" {
+		return nil, httpx.BadRequest("请输入验证码")
+	}
+	real, _ := s.rdb.Get(ctx, resetCodeKey(email)).Result()
+	if real == "" || real != code {
+		return nil, httpx.BadRequest("验证码错误或已过期", 40010)
+	}
+	u, err := s.users.FindByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+	if u == nil {
+		return nil, httpx.BadRequest("账号不存在", 40012)
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), 10)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.users.UpdatePassword(u.ID, string(hash)); err != nil {
+		return nil, err
+	}
+	s.rdb.Del(ctx, resetCodeKey(email))
+	return map[string]any{"reset": true}, nil
 }
 
 // IssueSession 签 JWT + 写 Redis 会话,返回 {token, user}
