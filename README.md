@@ -143,7 +143,7 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 前后端 + MySQL + Redis 四个容器一起跑,用 `deploy.sh` 操作:
 
 ```bash
-cd miniapp
+# 在仓库根目录(redisDb/)下直接执行
 ./deploy.sh up        # 构建并启动全部(首次 mysql 初始化稍慢)
 ./deploy.sh rebuild   # 改了代码:无缓存重建 + 重新创建容器
 ./deploy.sh down      # 停止(数据保留)
