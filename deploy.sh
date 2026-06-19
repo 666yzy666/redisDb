@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# 全栈一键部署脚本(mysql + redis + backend + frontend 都跑在容器里)
+# 单镜像一键部署脚本(app[前端+后端] + mysql + redis 三个容器)
 # 用法: ./deploy.sh <命令>
 set -euo pipefail
 
-cd "$(dirname "$0")"   # 切到 miniapp/ 目录(compose 文件所在)
+cd "$(dirname "$0")"   # 切到脚本所在目录(compose 文件所在,即仓库根)
 
 COMPOSE="docker compose"
-FRONT_URL="http://localhost:5173"
-API_URL="http://localhost:3000/api/health"
+APP_URL="http://localhost:3000"   # 单镜像:前端页面 + /api 同一端口
 
 usage() {
   cat <<EOF
@@ -22,14 +21,14 @@ usage() {
   ps        查看各容器状态
   help      显示本帮助
 
-入口: 前端 ${FRONT_URL}  |  后端 API ${API_URL%/health}
+入口: ${APP_URL} (前端页面 + /api 同一端口)
 EOF
 }
 
 case "${1:-help}" in
   up)
     $COMPOSE up -d --build
-    echo "✅ 已启动。前端: ${FRONT_URL}  后端: ${API_URL%/health}"
+    echo "✅ 已启动。入口: ${APP_URL} (前端 + API)"
     ;;
   build)
     $COMPOSE build
@@ -39,7 +38,7 @@ case "${1:-help}" in
     echo "🔁 无缓存重建镜像..."
     $COMPOSE build --no-cache
     $COMPOSE up -d --force-recreate
-    echo "✅ 已重建并启动。前端: ${FRONT_URL}"
+    echo "✅ 已重建并启动。入口: ${APP_URL}"
     ;;
   down)
     $COMPOSE down
