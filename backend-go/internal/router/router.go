@@ -12,9 +12,10 @@ import (
 )
 
 type Handlers struct {
-	Auth  *handler.AuthHandler
-	User  *handler.UserHandler
-	Admin *handler.AdminHandler
+	Auth    *handler.AuthHandler
+	User    *handler.UserHandler
+	Admin   *handler.AdminHandler
+	Payment *handler.PaymentHandler
 }
 
 // Setup 注册路由
@@ -46,6 +47,20 @@ func Setup(cfg *config.Config, rdb *redis.Client, h Handlers) *gin.Engine {
 			u.PUT("/profile", h.User.UpdateProfile)
 		}
 
+		// 付款订单
+		p := api.Group("/payment")
+		{
+			p.POST("/notify/:channel", h.Payment.Notify) // 回调:公开
+			pa := p.Group("", auth)                       // 以下需登录
+			{
+				pa.POST("/orders", h.Payment.Create)
+				pa.GET("/orders", h.Payment.ListMine)
+				pa.POST("/orders/:id/pay", h.Payment.Pay)
+				pa.POST("/orders/:id/cancel", h.Payment.Cancel)
+				pa.POST("/mock/complete", h.Payment.MockComplete)
+			}
+		}
+
 		// 后台(需登录 + 管理员)
 		ad := api.Group("/admin", auth, admin)
 		{
@@ -53,6 +68,7 @@ func Setup(cfg *config.Config, rdb *redis.Client, h Handlers) *gin.Engine {
 			ad.GET("/users", h.Admin.ListUsers)
 			ad.PATCH("/users/:id/role", h.Admin.SetRole)
 			ad.PATCH("/users/:id/status", h.Admin.SetStatus)
+			ad.GET("/orders", h.Payment.AdminListOrders)
 		}
 	}
 
