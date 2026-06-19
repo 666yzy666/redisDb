@@ -1,0 +1,12 @@
+# 构建上下文是仓库根,排除不需要进镜像的东西
+**/node_modules
+**/dist
+**/.env
+.git
+*.log
+docs
+deploy.sh
+docker-compose.yml
+README.md
+**/.dockerignore
+Dockerfile
