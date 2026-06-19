@@ -1,0 +1,79 @@
+# 全栈一键部署:mysql + redis + backend + frontend 四个容器
+# 用 deploy.sh 操作(up / build / rebuild / down / logs / ps / clean)
+# 入口:前端 http://localhost:5173 ;后端 API http://localhost:3000
+
+name: miniapp-deploy   # 固定项目名 => 数据卷名固定(miniapp-deploy_mysql_data)
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: miniapp-deploy-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: miniapp
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # 首启自动建全部表
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p123456"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 120s   # 首次初始化在慢盘(WSL)上可能 >60s,期间不计失败
+
+  redis:
+    image: redis:7
+    container_name: miniapp-deploy-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  backend:
+    build: ./backend
+    container_name: miniapp-deploy-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # 用 compose 服务名连接,而非 127.0.0.1
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PASSWORD: "123456"
+      MYSQL_DATABASE: miniapp
+      MYSQL_CONNECTION_LIMIT: "10"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      JWT_SECRET: "change_me_to_a_long_random_string_in_prod"
+      JWT_EXPIRES_IN: "7d"
+      # SMTP 留空 => 验证码走控制台 mock。要真发邮件在此填 SMTP_HOST 等。
+      SMTP_HOST: ""
+      VERIFY_CODE_TTL: "300"
+      VERIFY_COOLDOWN: "60"
+    ports:
+      - "3000:3000"          # 暴露便于直接调 API(按需可去掉)
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: miniapp-deploy-frontend
+    restart: unless-stopped
+    environment:
+      # vite 代理把 /api 转发到后端容器
+      VITE_PROXY_TARGET: "http://backend:3000"
+    ports:
+      - "5173:5173"          # 浏览器入口
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

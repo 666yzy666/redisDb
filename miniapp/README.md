@@ -138,6 +138,26 @@ docker exec miniapp-mysql mysql -uroot -p123456 -e "USE miniapp; UPDATE users SE
 - 新增 `api/settings.js`、`api/announcement.js`;`stores/app.js`(启动加载公开设置,顶栏显示站名)。
 - AdminLayout 侧边栏新增「公告」「系统设置」;DefaultLayout 顶栏新增「公告」,站名改为动态。
 
+## 一键 Docker 部署(全栈进容器)
+
+前后端 + MySQL + Redis 四个容器一起跑,用 `deploy.sh` 操作:
+
+```bash
+cd miniapp
+./deploy.sh up        # 构建并启动全部(首次 mysql 初始化稍慢)
+./deploy.sh rebuild   # 改了代码:无缓存重建 + 重新创建容器
+./deploy.sh down      # 停止(数据保留)
+./deploy.sh clean     # 停止并清空数据卷(回到全新)
+./deploy.sh logs      # 看日志    ./deploy.sh ps  # 看状态
+```
+
+- 入口:前端 http://localhost:5173 ,后端 API http://localhost:3000 。
+- 前端容器直接跑 Vite,`/api` 经 `VITE_PROXY_TARGET` 代理到后端容器(无 Nginx)。
+- 后端容器用服务名连 `mysql` / `redis`;MySQL 首启自动跑 `backend/sql/init.sql` 建全部表。
+- 各服务带 `restart: unless-stopped`,Docker 重启后自动拉起。
+- `NODE_ENV=production`,验证码不再走接口返回,改打到 backend 容器日志(`./deploy.sh logs`);要真发邮件在 `docker-compose.yml` 的 backend `environment` 填 SMTP_*。
+- 此部署用独立数据卷(`miniapp-deploy_mysql_data`),与本地 dev 的 `backend/docker-compose.yml` 数据互不影响。
+
 ## 说明
 
 - 微信登录(`/api/users/login`)与订单模块原样保留,未受影响。
